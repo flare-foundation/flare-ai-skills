@@ -1,0 +1,40 @@
+{
+  "name": "flare-ai-skills",
+  "owner": {
+    "name": "Flare Foundation",
+    "email": "support@flare.network"
+  },
+  "metadata": {
+    "description": "Agent Skills for Flare blockchain development",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "flare-fassets",
+      "description": "FAssets domain knowledge for Flare development. Covers wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration.",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": ["flare", "fassets", "blockchain", "defi", "web3"],
+      "source": "./skills/flare-fassets-skill",
+      "strict": false
+    },
+    {
+      "name": "flare-fdc",
+      "description": "Flare Data Connector domain knowledge. Covers attestation types (EVMTransaction, Web2Json, Payment), request flow, Merkle proofs, verifier/DA Layer, and contract verification.",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": ["flare", "fdc", "attestation", "blockchain", "web3"],
+      "source": "./skills/flare-fdc-skill",
+      "strict": false
+    },
+    {
+      "name": "flare-smart-accounts",
+      "description": "Smart Accounts domain knowledge for Flare development. Covers account abstraction for XRPL users to interact with Flare without owning FLR.",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": ["flare", "smart-accounts", "xrpl", "blockchain", "web3"],
+      "source": "./skills/flare-smart-accounts-skill",
+      "strict": false
+    }
+  ]
+}

@@ -83,15 +83,16 @@ Then use the skills in your AI agent, for example:
 To install skills for your personal use in Claude Code:
 
 1. Add the marketplace:
- ```
- /plugin marketplace add flare-foundation/flare-ai-skills
- ```
+   ```
+   /plugin marketplace add flare-foundation/flare-ai-skills
+   ```
 2. Install the skills:
- ```
- /plugin install flare-fassets@flare-fassets-skill
- /plugin install flare-fdc@flare-fdc-skill
- /plugin install flare-smart-accounts@flare-smart-accounts-skill
- ```
+   ```
+   /plugin install flare-fassets@flare-ai-skills
+   /plugin install flare-fdc@flare-ai-skills
+   /plugin install flare-smart-accounts@flare-ai-skills
+   ```
+3. Manage plugins: Run `/plugin` to open the interactive plugin manager
 
 **Project Configuration**
 
@@ -100,22 +101,41 @@ To automatically provide these skills to everyone working in a repository, confi
 ```json
 {
   "enabledPlugins": {
-    "flare-fassets@flare-fassets-skill": true,
-    "flare-fdc@flare-fdc-skill": true,
-    "flare-smart-accounts@flare-smart-accounts-skill": true
- },
+    "flare-fassets@flare-ai-skills": true,
+    "flare-fdc@flare-ai-skills": true,
+    "flare-smart-accounts@flare-ai-skills": true
+  },
   "extraKnownMarketplaces": {
     "flare-ai-skills": {
       "source": {
         "source": "github",
         "repo": "flare-foundation/flare-ai-skills"
- }
- }
- }
+      }
+    }
+  }
 }
 ```
 
 When team members open the project, Claude Code will prompt them to install the skills.
+
+**Plugin Architecture**
+
+This repository serves as both a skill collection and a Claude Code marketplace. The structure:
+
+```
+flare-ai-skills/
+├── .claude-plugin/
+│   └── marketplace.json    # Marketplace catalog listing all plugins
+└── skills/
+    ├── flare-fassets-skill/
+    │   └── SKILL.md
+    ├── flare-fdc-skill/
+    │   └── SKILL.md
+    └── flare-smart-accounts-skill/
+        └── SKILL.md
+```
+
+The `marketplace.json` defines the marketplace name (`flare-ai-skills`) and lists each plugin with its source path. Users reference plugins as `plugin-name@marketplace-name`.
 
 ### Option C: Manual install
 
