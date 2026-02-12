@@ -12,4 +12,5 @@ and this project adheres to
 
 - Initial release
 - **flare-fassets-skill**: FAssets domain knowledge, including FXRP, FBTC, FDOGE, minting, redemption, agents, and collateral
+- **flare-fdc-skill**: Flare Data Connector domain knowledge, including attestation types (EVMTransaction, Web2Json, Payment), request flow, Merkle proofs, and contract verification
 - **flare-smart-accounts-skill**: Smart Accounts domain knowledge for XRPL account abstraction on Flare
