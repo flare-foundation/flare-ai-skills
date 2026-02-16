@@ -1,0 +1,182 @@
+---
+name: flare-ftso
+description: Provides domain knowledge and guidance for the Flare Time Series Oracle (FTSO)—block-latency feeds, Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation, and smart contract integration. Use when working with FTSO, price feeds, oracle data, feed consumption, volatility incentives, or Flare Developer Hub FTSO guides and starter repos.
+---
+
+# Flare Time Series Oracle (FTSO)
+
+## What FTSO Is
+
+The **Flare Time Series Oracle (FTSO)** is an enshrined oracle that delivers decentralized price feeds to the Flare network. FTSO is the current version, offering fast, scalable, and manipulation-resistant data feeds.
+
+**Key properties:**
+- **Enshrined** — built into Flare's core protocol; every feed inherits the economic security of the entire network.
+- **Fast** — block-latency feeds update with every new block on Flare, approximately every **≈1.8 seconds**.
+- **Scalable** — supports up to **1000 feeds** across crypto, equities, and commodities, with **2 weeks** of historical data.
+- **Decentralized** — each feed is supported by approximately **100 independent data providers**, selected by delegated stake.
+- **Cost-effective** — block-latency feeds are **free to query onchain** (view calls). Some feeds may require a small fee for state-changing calls. Scaling anchor feeds are free to query and verify locally, with minimal gas for onchain verification.
+
+## Architecture
+
+FTSO has four core components:
+
+1. **Verifiably Random Selection** — Each block triggers selection of data providers via a stake-weighted Verifiable Randomness Function (VRF). Expected sample size is 1.5 per block. Providers have no control over when they are selected.
+
+2. **Incremental Delta Updates** — Selected providers submit a fixed delta (+1, 0, or −1) applied to the previous feed value. Base increment: `1/2^13 ≈ 0.0122%`. Formula: `P(t+1) = (1 + p)^δ(t) × P(t)`.
+
+3. **Volatility Incentive Mechanism** — During high volatility, anyone can pay a fee to temporarily increase the expected sample size, enabling faster price convergence. Only the expected (not actual) sample size increases.
+
+4. **Anchoring to Scaling** — Scaling feeds use a full commit-reveal process across all providers every **90 seconds** and serve as accuracy anchors. Providers are rewarded when block-latency feeds stay within ±0.25% of anchor feeds.
+
+## Feed Types
+
+| Type | Update Frequency | Method | Cost |
+|------|-----------------|--------|------|
+| **Block-latency feeds** | Every block (≈1.8s) | Incremental delta updates via VRF-selected providers | Free (view); small fee possible for state-changing calls |
+| **Scaling (anchor) feeds** | Every 90 seconds (voting epoch) | Full commit-reveal across all providers, weighted median | Free to query; minimal gas for onchain Merkle verification |
+
+## Feed IDs
+
+Each feed is identified by a **21-byte (`bytes21`) feed ID**. The first byte is a category indicator (e.g. `0x01` for crypto), followed by the ticker pair padded to 21 bytes.
+
+**Common feed IDs (crypto/USD):**
+
+| Feed | Index | Feed ID |
+|------|-------|---------|
+| FLR/USD | 0 | `0x01464c522f55534400000000000000000000000000` |
+| SGB/USD | 1 | `0x015347422f55534400000000000000000000000000` |
+| BTC/USD | 2 | `0x014254432f55534400000000000000000000000000` |
+| XRP/USD | 3 | `0x015852502f55534400000000000000000000000000` |
+| ETH/USD | 9 | `0x014554482f55534400000000000000000000000000` |
+| DOGE/USD | 6 | `0x01444f47452f555344000000000000000000000000` |
+| SOL/USD | 15 | `0x01534f4c2f55534400000000000000000000000000` |
+| USDC/USD | 16 | `0x01555344432f555344000000000000000000000000` |
+| USDT/USD | 17 | `0x01555344542f555344000000000000000000000000` |
+| LINK/USD | 20 | `0x014c494e4b2f555344000000000000000000000000` |
+
+Full feed list: [dev.flare.network/ftso/feeds](https://dev.flare.network/ftso/feeds)
+
+**Feed ID encoding:** The ticker string (e.g. `FLR/USD`) is UTF-8 encoded, prefixed with the category byte, and right-padded with zero bytes to 21 bytes total.
+
+## Consuming Feeds Onchain (Solidity)
+
+### Contract Resolution
+
+Resolve the FTSO contract via `ContractRegistry`:
+- **Testnet (Coston2):** `ContractRegistry.getTestFtsoV2()` → returns `TestFtsoV2Interface` (all view, no fees, for development).
+- **Production (Flare/Songbird):** `ContractRegistry.getFtsoV2()` → returns `FtsoV2Interface` (payable methods, real state).
+
+**Do not hardcode** the FtsoV2 contract address. Use `ContractRegistry` from `@flarenetwork/flare-periphery-contracts`.
+
+### Key Interface Methods (`FtsoV2Interface`)
+
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `getFeedById(bytes21 _feedId)` | `(uint256 value, int8 decimals, uint64 timestamp)` | Single feed. May require fee (payable). |
+| `getFeedByIdInWei(bytes21 _feedId)` | `(uint256 value, uint64 timestamp)` | Value scaled to 18 decimals (wei). |
+| `getFeedsById(bytes21[] _feedIds)` | `(uint256[] values, int8[] decimals, uint64 timestamp)` | Multiple feeds in one call. |
+| `getFeedsByIdInWei(bytes21[] _feedIds)` | `(uint256[] values, uint64 timestamp)` | Multiple feeds in wei. |
+| `verifyFeedData(FeedDataWithProof _feedData)` | `bool` | Verify Scaling anchor feed data against onchain Merkle root. |
+
+**Floating-point conversion:** `feedValue / 10^decimals`. Example: BTC/USD value `6900420` with decimals `2` → `69004.20`.
+
+### Fee Calculation
+
+Some feeds require a fee for state-changing (`payable`) calls. Use `IFeeCalculator`:
+
+```solidity
+IFeeCalculator feeCalc = ContractRegistry.getFeeCalculator();
+uint256 fee = feeCalc.calculateFeeByIds(feedIds);
+// Then call: ftsoV2.getFeedsById{value: fee}(feedIds);
+```
+
+Block-latency feed view calls are free (no fee needed for `view`/`pure` patterns).
+
+### Example: Consume Block-Latency Feeds
+
+Reads multiple FTSO block-latency feeds in a single call using `TestFtsoV2Interface` resolved via `ContractRegistry`. See [scripts/consume-feeds.sol](scripts/consume-feeds.sol) for the full Solidity example.
+
+**Important:** Set EVM version to **cancun** when compiling. Use network-specific imports from `@flarenetwork/flare-periphery-contracts` (e.g. `coston2/`, `flare/`, `songbird/`).
+
+### Example: Verify Scaling Anchor Feed
+
+Verifies a Scaling anchor feed value against the onchain Merkle root and stores proven feed data. See [scripts/verify-anchor-feed.sol](scripts/verify-anchor-feed.sol) for the full Solidity example.
+
+### Example: Change Quote Feed (Cross-Pair)
+
+If you need BTC/ETH but only BTC/USD and ETH/USD feeds exist, fetch both and divide:
+
+```
+BTC/ETH = (BTC/USD) / (ETH/USD)
+```
+
+Scale the base feed decimals to `2 × quoteDecimals` before dividing to retain precision. See the `FtsoV2ChangeQuoteFeed` example in the Flare Developer Hub.
+
+## Consuming Feeds Offchain (JavaScript/TypeScript)
+
+Use `web3` or `ethers` to call the FtsoV2 contract directly via RPC. The FtsoV2 address should be resolved dynamically via `ContractRegistry` — do not hardcode contract addresses. See [scripts/read-feeds-offchain.ts](scripts/read-feeds-offchain.ts) for a complete example that resolves the address at runtime.
+
+**Packages:** `web3`, `@flarenetwork/flare-periphery-contract-artifacts`. For ethers, use `@flarenetwork/flare-periphery-contracts` and the contract ABI from the artifacts package. For wagmi/viem integration, use [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
+
+## Making a Volatility Incentive
+
+During periods of high volatility, anyone can pay a fee to temporarily increase the expected sample size of FTSO block-latency feeds, enabling faster price convergence. This is done via the `FastUpdatesIncentiveManager` contract's `offerIncentive` method.
+
+The process:
+1. Query `getCurrentSampleSizeIncreasePrice()` to get the required fee.
+2. Call `offerIncentive({ rangeIncrease: 0, rangeLimit: 0 })` with the fee as `msg.value`.
+3. The expected sample size increases temporarily, improving feed responsiveness.
+
+See [scripts/make-volatility-incentive.ts](scripts/make-volatility-incentive.ts) for a complete TypeScript example and the [Make a Volatility Incentive guide](https://dev.flare.network/ftso/guides/make-volatility-incentive) on the Flare Developer Hub.
+
+## Scaling (Anchor Feeds) Deep Dive
+
+Scaling provides commit-reveal anchored prices every **90 seconds** (one voting epoch).
+
+**Process:**
+1. **Commit** — Providers submit commit hashes (concealing feed values).
+2. **Reveal** — Providers reveal values and random numbers.
+3. **Sign** — Valid reveals produce a **weighted median**; results aggregated into a Merkle tree and published onchain.
+4. **Finalization** — A randomly chosen provider (or fallback) submits the signed Merkle root onchain.
+
+**Weighted median:** Sort all provider submissions by value, accumulate stake-weighted totals, and select the value where cumulative weight exceeds 50% of total weight.
+
+**Verification:** Use `ftsoV2.verifyFeedData(feedDataWithProof)` to verify a Scaling feed value against the onchain Merkle root. Pass the `FeedDataWithProof` struct containing `FeedData` (votingRoundId, id, value, turnoutBIPS, decimals) and the Merkle proof array.
+
+**Incentives:**
+- **Median closeness rewards** — for submissions within the interquartile range (IQR).
+- **Signature rewards** — for correctly signing Merkle trees.
+- **Finalization rewards** — for submitting the finalized Merkle root.
+- **Penalties** — for non-matching reveals, invalid submissions, or missing randomness.
+- **Community reward offers** — anyone can sponsor extra rewards for specific feeds.
+
+## Delegation
+
+FTSO data providers are selected by Flare users through **delegation**. Users delegate their FLR (or WFLR) stake to preferred data providers, increasing those providers' weight in the feed calculation.
+
+Delegators earn a share of FTSO rewards proportional to their delegation. Delegation does not transfer tokens — it only assigns voting power.
+
+## Starter Repositories
+
+- **[flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter):** FTSO consumer examples in `contracts/` and `scripts/`.
+- **[flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter):** Foundry equivalents in `src/` and `script/`.
+
+Both include feed consumption, change-quote-feed, and anchor feed verification examples.
+
+## When to Use This Skill
+
+- Consuming FTSO price feeds onchain (Solidity) or offchain (JS/TS).
+- Integrating FtsoV2Interface, TestFtsoV2Interface, or FeeCalculator.
+- Verifying Scaling anchor feed data with Merkle proofs.
+- Building cross-pair feeds (change quote feed).
+- Understanding FTSO architecture, delegation, volatility incentives, or data provider selection.
+- Following Flare Developer Hub FTSO guides and reference.
+
+## Additional Resources
+
+- Detailed APIs, contract interfaces, and links: [reference.md](reference.md)
+- FTSO Overview: [dev.flare.network/ftso/overview](https://dev.flare.network/ftso/overview)
+- Getting Started: [dev.flare.network/ftso/getting-started](https://dev.flare.network/ftso/getting-started)
+- Feed list: [dev.flare.network/ftso/feeds](https://dev.flare.network/ftso/feeds)
+- Scaling: [dev.flare.network/ftso/scaling/overview](https://dev.flare.network/ftso/scaling/overview)
+- Guides: [Read Feeds Offchain](https://dev.flare.network/ftso/guides/read-feeds-offchain) · [Change Quote Feed](https://dev.flare.network/ftso/guides/change-quote-feed) · [Make a Volatility Incentive](https://dev.flare.network/ftso/guides/make-volatility-incentive) · [Create a Custom Feed](https://dev.flare.network/ftso/guides/create-custom-feed) · [Migrate an App (Adapters)](https://dev.flare.network/ftso/guides/adapters)

@@ -10,6 +10,15 @@
   },
   "plugins": [
     {
+      "name": "flare-ftso",
+      "description": "FTSO domain knowledge for Flare development. Covers decentralized block-latency price feeds, Scaling anchor feeds, feed IDs, FtsoV2Interface, FeeCalculator, onchain and offchain consumption, and delegation.",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": ["flare", "ftso", "oracle", "price-feeds", "blockchain", "defi", "web3"],
+      "source": "./skills/flare-ftso-skill",
+      "strict": false
+    },
+    {
       "name": "flare-fassets",
       "description": "FAssets domain knowledge for Flare development. Covers wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration.",
       "version": "1.0.0",

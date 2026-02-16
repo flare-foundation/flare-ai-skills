@@ -17,18 +17,26 @@
 # Flare AI Skills
 
 A collection of Agent Skills for **Cursor**, **Claude Code**, and other [skills.sh](https://skills.sh/)-compatible agents.
-Provides domain knowledge and guidance for **[Flare](https://flare.network/)** development, including FAssets, Smart Accounts, and more.
+Provides domain knowledge and guidance for **[Flare](https://flare.network/)** development, including FTSO, FAssets, Smart Accounts, and more.
 Same `SKILL.md` format works across tools.
 
 ## Available Skills
 
 | Skill | Description |
 |-------|-------------|
+| **[flare-ftso](skills/flare-ftso-skill/SKILL.md)** | FTSO—decentralized block-latency price feeds (~1.8s), Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation |
 | **[flare-fassets](skills/flare-fassets-skill/SKILL.md)** | FAssets—wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration |
 | **[flare-fdc](skills/flare-fdc-skill/SKILL.md)** | Flare Data Connector—attestation types (EVMTransaction, Web2Json, Payment, etc.), request flow, Merkle proofs, verifier/DA Layer, contract verification |
 | **[flare-smart-accounts](skills/flare-smart-accounts-skill/SKILL.md)** | Smart Accounts—account abstraction for XRPL users to interact with Flare without owning FLR |
 
 ## What's in the skills
+
+### flare-ftso
+- **FTSO overview:** Enshrined oracle, block-latency feeds (~1.8s), ~100 data providers, stake-weighted VRF selection
+- **Architecture:** Verifiably random selection, incremental delta updates, volatility incentive mechanism, Scaling anchoring
+- **Feed consumption:** `FtsoV2Interface` (`getFeedById`, `getFeedsById`, wei variants), `ContractRegistry` resolution, `FeeCalculator`
+- **Scaling:** Commit-reveal anchor feeds (90s), weighted median, Merkle tree finalization, incentivization
+- **Offchain reads:** Web3.js/ethers scripts via RPC, `@flarenetwork/flare-periphery-contract-artifacts` for ABI
 
 ### flare-fassets
 - **FAssets overview:** Trustless bridge, FTSO/FDC, collateral model
@@ -47,7 +55,7 @@ Same `SKILL.md` format works across tools.
 - **CLI tool:** Python CLI for encoding and sending XRPL transactions
 - **TypeScript integration:** Viem-based examples for state lookup and custom instructions
 
-The agent uses these skills when you work with FAssets, FXRP, minting/redemption, FDC attestations, Smart Accounts, or Flare DeFi.
+The agent uses these skills when you work with FTSO price feeds, FAssets, FXRP, minting/redemption, FDC attestations, Smart Accounts, or Flare DeFi.
 
 ## How to Use These Skills
 
@@ -56,6 +64,9 @@ The agent uses these skills when you work with FAssets, FXRP, minting/redemption
 Install skills with a single command:
 
 ```bash
+# Install FTSO skill
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
+
 # Install FAssets skill
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
 
@@ -66,9 +77,11 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
 ```
 
-For more information, visit the [skills.sh platform page](https://skills.sh/flare-foundation/flare-ai-skills/flare-fassets).
+For more information, visit the [skills.sh platform page](https://skills.sh/flare-foundation/flare-ai-skills).
 
 Then use the skills in your AI agent, for example:
+
+> Use the flare-ftso skill and show how to consume FTSO price feeds in a Solidity contract.
 
 > Use the flare-fassets skill and explain how to mint FXRP step by step.
 
@@ -88,6 +101,7 @@ To install skills for your personal use in Claude Code:
    ```
 2. Install the skills:
    ```
+   /plugin install flare-ftso@flare-ai-skills
    /plugin install flare-fassets@flare-ai-skills
    /plugin install flare-fdc@flare-ai-skills
    /plugin install flare-smart-accounts@flare-ai-skills
@@ -101,6 +115,7 @@ To automatically provide these skills to everyone working in a repository, confi
 ```json
 {
   "enabledPlugins": {
+    "flare-ftso@flare-ai-skills": true,
     "flare-fassets@flare-ai-skills": true,
     "flare-fdc@flare-ai-skills": true,
     "flare-smart-accounts@flare-ai-skills": true
@@ -127,6 +142,8 @@ flare-ai-skills/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog listing all plugins
 └── skills/
+    ├── flare-ftso-skill/
+    │   └── SKILL.md
     ├── flare-fassets-skill/
     │   └── SKILL.md
     ├── flare-fdc-skill/
@@ -141,6 +158,7 @@ The `marketplace.json` defines the marketplace name (`flare-ai-skills`) and list
 
 1. Clone this repository.
 2. Install or symlink the desired skill folder(s) following your tool's official skills installation docs (see links below):
+   - **`skills/flare-ftso-skill/`** for FTSO
    - **`skills/flare-fassets-skill/`** for FAssets
    - **`skills/flare-fdc-skill/`** for FDC
    - **`skills/flare-smart-accounts-skill/`** for Smart Accounts
@@ -156,7 +174,7 @@ Follow your tool's official documentation; here are a few popular ones:
 
 **How to verify**
 
-Your agent should reference the workflow and concepts from the skill's `SKILL.md` and use `reference.md` for Flare Developer Hub links when you ask about FAssets, FXRP, minting, redemption, FDC attestations, Smart Accounts, or related topics.
+Your agent should reference the workflow and concepts from the skill's `SKILL.md` and use `reference.md` for Flare Developer Hub links when you ask about FTSO price feeds, FAssets, FXRP, minting, redemption, FDC attestations, Smart Accounts, or related topics.
 
 ## Repository layout
 
@@ -166,6 +184,14 @@ flare-ai-skills/
 ├── LICENSE                          # MIT
 ├── .gitignore
 └── skills/
+ ├── flare-ftso-skill/            # FTSO skill
+ │   ├── SKILL.md                 # Main skill instructions
+ │   ├── reference.md             # Flare Developer Hub links
+ │   └── scripts/                 # Example scripts
+ │       ├── consume-feeds.sol
+ │       ├── verify-anchor-feed.sol
+ │       ├── read-feeds-offchain.ts
+ │       └── make-volatility-incentive.ts
  ├── flare-fassets-skill/         # FAssets skill
  │   ├── SKILL.md                 # Main skill instructions
  │   ├── reference.md             # Flare Developer Hub links
@@ -189,7 +215,8 @@ Each skill folder (with `SKILL.md` and `reference.md`) can be installed independ
 
 ## Links
 
-- [Install via skills.sh](https://skills.sh/flare-foundation/flare-ai-skills/flare-fassets) — one-command install for Cursor, Claude Code, Codex, and more
+- [Install via skills.sh](https://skills.sh/flare-foundation/flare-ai-skills) — one-command install for Cursor, Claude Code, Codex, and more
+- [Flare FTSO Overview](https://dev.flare.network/ftso/overview)
 - [Flare FAssets Overview](https://dev.flare.network/fassets/overview/)
 - [Flare FDC Overview](https://dev.flare.network/fdc/overview)
 - [Flare Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview)
