@@ -2,7 +2,10 @@
  * Get FXRP address — Skill resource script
  *
  * Flow: FlareContractsRegistry → AssetManagerFXRP → fAsset()
+ * Read-only: queries chain via RPC only; no writes or external fetches.
+ *
  * Run in a project with ethers (e.g. Flare Hardhat Starter Kit or any Node app with ethers).
+ * Review this script before running; execute in an isolated environment.
  *
  * Prerequisites: npm install ethers
  * Usage: npx ts-node scripts/get-fxrp-address.ts
@@ -11,6 +14,7 @@
 
 import { Contract, JsonRpcProvider } from "ethers";
 
+// Same on all Flare networks. Verify at: https://dev.flare.network/network/guides/flare-contracts-registry
 const FLARE_CONTRACTS_REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 
 const REGISTRY_ABI = [
