@@ -60,7 +60,9 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 
 ## Verifier and DA Layer
 
-- **Testnet verifier:** e.g. `https://fdc-verifiers-testnet.flare.network/` (rate-limited; use your own in production)
+- **Testnet verifier:** `https://fdc-verifiers-testnet.flare.network` (rate-limited; use your own in production)
+- **Mainnet verifier:** `https://fdc-verifiers-mainnet.flare.network`
+- **API keys:** Set `VERIFIER_API_KEY_TESTNET` / `VERIFIER_API_KEY_MAINNET` in `.env` (UUID format, see [`.env.example`](https://github.com/flare-foundation/flare-hardhat-starter/blob/main/.env.example)); pass via `X-apikey` header
 - **Prepare request:** POST to verifier path like `/verifier/eth/EVMTransaction/prepareRequest` or `/Web2Json/prepareRequest` with `attestationType`, `sourceId`, `requestBody`
 - **DA Layer:** e.g. `POST .../api/v1/fdc/proof-by-request-round-raw` with body `{ votingRoundId, requestBytes }`; response includes `proof` (Merkle path) and response data (e.g. `response_hex`)
 
