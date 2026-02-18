@@ -59,7 +59,42 @@ The agent uses these skills when you work with FTSO price feeds, FAssets, FXRP, 
 
 ## How to Use These Skills
 
-### Option A: Using skills.sh (recommended)
+### How to install in Cursor
+
+**Method 1: Using skills.sh (recommended)**
+
+From your project or any directory, run:
+
+```bash
+# Install one or more skills (Cursor will use them when skills are enabled)
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
+```
+
+See [skills.sh](https://skills.sh/flare-foundation/flare-ai-skills) for details. Ensure [Cursor has skills enabled](https://docs.cursor.com/context/rules-for-ai#skills).
+
+**Method 2: Manual install**
+
+1. Clone or download this repo.
+2. Copy or symlink the skill folders into Cursor’s skills directory:
+   - **This project only:** `./.cursor/skills/`
+   - **All your projects:** `~/.cursor/skills/` (create the folder if it doesn’t exist)
+3. Put each skill’s **folder** (e.g. `flare-ftso-skill`) inside that `skills/` directory so Cursor sees the `SKILL.md` files.
+
+Example for project-only install:
+
+```bash
+mkdir -p .cursor/skills
+cp -r /path/to/flare-ai-skills/skills/flare-ftso-skill .cursor/skills/
+cp -r /path/to/flare-ai-skills/skills/flare-fassets-skill .cursor/skills/
+# repeat for flare-fdc-skill, flare-smart-accounts-skill
+```
+
+4. In Cursor, confirm skills are enabled (Settings → Cursor Settings → Rules for AI / Skills). You can then ask the agent to use a skill by name (e.g. “Use the flare-ftso skill and show how to read FTSO feeds”).
+
+### Option A: Using skills.sh (all compatible agents)
 
 Install skills with a single command:
 
