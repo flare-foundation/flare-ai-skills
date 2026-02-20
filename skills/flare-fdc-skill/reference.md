@@ -46,7 +46,6 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 - [IFdcHub](https://dev.flare.network/fdc/reference/IFdcHub) — `requestAttestation(bytes)`, fee configs
 - [IFdcVerification](https://dev.flare.network/fdc/reference/IFdcVerification) — `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`, etc.
 - [IEVMTransaction](https://dev.flare.network/fdc/reference/IEVMTransaction) — Proof/Response/RequestBody/ResponseBody/Event
-- [IWeb2Json](https://dev.flare.network/fdc/reference/IWeb2Json)
 - [IAddressValidity](https://dev.flare.network/fdc/reference/IAddressValidity)
 - [Data Availability API](https://dev.flare.network/fdc/reference/data-availability-api) — DA Layer endpoints
 

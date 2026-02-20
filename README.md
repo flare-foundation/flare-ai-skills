@@ -252,7 +252,7 @@ Each skill folder (with `SKILL.md` and `reference.md`) can be installed independ
 
 - [Install via skills.sh](https://skills.sh/flare-foundation/flare-ai-skills) — one-command install for Cursor, Claude Code, Codex, and more
 - [Flare FTSO Overview](https://dev.flare.network/ftso/overview)
-- [Flare FAssets Overview](https://dev.flare.network/fassets/overview/)
+- [Flare FAssets Overview](https://dev.flare.network/fassets/overview)
 - [Flare FDC Overview](https://dev.flare.network/fdc/overview)
 - [Flare Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview)
 - [Flare Developer Hub](https://dev.flare.network/)

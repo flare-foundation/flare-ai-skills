@@ -28,9 +28,7 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 ## Solidity Reference (Contract Interfaces)
 
 - [FtsoV2Interface](https://dev.flare.network/ftso/solidity-reference/FtsoV2Interface) — `getFeedById`, `getFeedsById`, `getFeedByIdInWei`, `getFeedsByIdInWei`, `verifyFeedData` (LTS interface)
-- [TestFtsoV2Interface](https://dev.flare.network/ftso/solidity-reference/TestFtsoV2Interface) — Test-only interface with all-view methods (no fees, no state changes)
 - [IFeeCalculator](https://dev.flare.network/ftso/solidity-reference/IFeeCalculator) — `calculateFeeByIds(bytes21[])` for block-latency feed fees
-- [ContractRegistry](https://dev.flare.network/network/solidity-reference/ContractRegistry) — `getFtsoV2()`, `getTestFtsoV2()`, `getFeeCalculator()`
 
 ## Network and RPC
 
@@ -57,4 +55,4 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 ## Related Protocols
 
 - [FDC Overview](https://dev.flare.network/fdc/overview) — Flare Data Connector (cross-chain attestations)
-- [FAssets Overview](https://dev.flare.network/fassets/overview/) — FAssets use FTSO for price feeds in collateral calculations
+- [FAssets Overview](https://dev.flare.network/fassets/overview) — FAssets use FTSO for price feeds in collateral calculations

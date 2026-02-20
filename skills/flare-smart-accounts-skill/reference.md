@@ -27,7 +27,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ### FAssets (for minting/redemption context)
 
-- [FAssets Overview](https://dev.flare.network/fassets/overview/) — System summary, workflow, participants
+- [FAssets Overview](https://dev.flare.network/fassets/overview) — System summary, workflow, participants
 - [FXRP Overview](https://dev.flare.network/fxrp/overview) — FXRP architecture, mint/redeem paths
 - [FAssets Minting](https://dev.flare.network/fassets/minting) — Minting flow, fees, payment deadlines
 - [FAssets Redemption](https://dev.flare.network/fassets/redemption) — Redemption flow and agent payouts
