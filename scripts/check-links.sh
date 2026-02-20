@@ -16,7 +16,10 @@ BROKEN_LIST=""
 # Ignore list: RPC endpoints, API endpoints, and sites that block automated requests.
 # Add URLs or patterns (one per line) to skip during link checking.
 IGNORE_LIST=(
+  "https://fdc-verifiers-testnet.flare.network"
   "https://fdc-verifiers-testnet.flare.network/"
+  "https://fdc-verifiers-mainnet.flare.network"
+  "https://fdc-verifiers-mainnet.flare.network/"
 )
 
 # Sites that block automated requests (matched as substring)
