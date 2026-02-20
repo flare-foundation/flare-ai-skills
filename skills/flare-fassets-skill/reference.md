@@ -4,7 +4,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ## Overview and Concepts
 
-- [FAssets Overview](https://dev.flare.network/fassets/overview/) — System summary, workflow, participants, Core Vault
+- [FAssets Overview](https://dev.flare.network/fassets/overview) — System summary, workflow, participants, Core Vault
 - [FXRP Overview](https://dev.flare.network/fxrp/overview) — FXRP architecture, mint/redeem paths, and usage options on Flare
 - [FAssets Minting](https://dev.flare.network/fassets/minting) — Minting flow, fees, payment deadlines, failure handling
 - [FAssets Redemption](https://dev.flare.network/fassets/redemption) — Redemption flow
@@ -25,7 +25,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [Swap and Redeem](https://dev.flare.network/fassets/developer-guides/fassets-swap-redeem)
 - [Redemption Defaults](https://dev.flare.network/fassets/developer-guides/fassets-redemption-default)
 - [Redemption Queue](https://dev.flare.network/fassets/developer-guides/fassets-redemption-queue)
-- [FAsset Auto-Redeem](https://dev.flare.network/fassets/developer-guides/fassets-autoredeem)
+- [FAsset Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [Get FXRP Token Address](https://dev.flare.network/fxrp/token-interactions/fxrp-address)
 - **Skill script:** [scripts/get-fxrp-address.ts](scripts/get-fxrp-address.ts) — get FXRP address at runtime (FlareContractsRegistry → AssetManagerFXRP → fAsset())
 - [Swap USDT0 to FXRP](https://dev.flare.network/fxrp/token-interactions/usdt0-fxrp-swap)
