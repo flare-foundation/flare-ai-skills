@@ -13,6 +13,10 @@
  * Review this script before running; execute in an isolated environment.
  *
  * Prerequisites: npm install ethers
+ * For proper ABI usage and type safety, use the Flare periphery packages:
+ *   - Solidity contracts: https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts
+ *   - Artifacts: https://www.npmjs.com/package/@flarenetwork/flare-periphery-contract-artifacts
+ *   - Wagmi types: https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package
  * Usage: npx ts-node scripts/get-fxrp-address.ts
  * Or with Hardhat: yarn hardhat run scripts/get-fxrp-address.ts --network coston2
  */

@@ -15,6 +15,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ## Developer Guides
 
+- **Skill guide:** [minting-guide.md](minting-guide.md) — complete minting walkthrough (reserve collateral → XRP payment → FDC proof → execute minting) including executor-based minting
+- **Skill guide:** [redemption-guide.md](redemption-guide.md) — complete redemption walkthrough (approve → redeem → agent pays → default handling)
 - [Developer Guides Index](https://dev.flare.network/fassets/developer-guides)
 - [Get Asset Manager Address](https://dev.flare.network/fassets/developer-guides/fassets-asset-manager-address-contracts-registry) — From Flare Contract Registry
 - [Read FAssets Settings (Solidity)](https://dev.flare.network/fassets/developer-guides/fassets-settings-solidity) — Lot size, value via FTSO
@@ -28,7 +30,17 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [FAsset Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [Get FXRP Token Address](https://dev.flare.network/fxrp/token-interactions/fxrp-address)
 - **Skill script:** [scripts/get-fxrp-address.ts](scripts/get-fxrp-address.ts) — get FXRP address at runtime (FlareContractsRegistry → AssetManagerFXRP → fAsset())
+- **Skill script:** [scripts/get-fassets-settings.ts](scripts/get-fassets-settings.ts) — read lot size, decimals, and XRP/USD price via FTSOv2
+- **Skill script:** [scripts/list-agents.ts](scripts/list-agents.ts) — list all available FAssets agents with fees and free collateral
+- **Skill script:** [scripts/get-redemption-queue.ts](scripts/get-redemption-queue.ts) — get redemption queue total value and lots
+- **Skill script:** [scripts/reserve-collateral.ts](scripts/reserve-collateral.ts) — find best agent and reserve collateral for minting (write tx)
+- **Skill script:** [scripts/xrp-payment.ts](scripts/xrp-payment.ts) — send XRP payment with memo for FAssets minting (XRPL tx)
+- **Skill script:** [scripts/execute-minting.ts](scripts/execute-minting.ts) — execute minting with FDC proof after XRP payment (write tx)
+- **Skill script:** [scripts/redeem-fassets.ts](scripts/redeem-fassets.ts) — redeem FXRP for underlying XRP (write tx)
+- **Skill script:** [scripts/swap-usdt0-to-fxrp.ts](scripts/swap-usdt0-to-fxrp.ts) — swap USDT0 to FXRP via SparkDEX Uniswap V3 (write tx)
 - [Swap USDT0 to FXRP](https://dev.flare.network/fxrp/token-interactions/usdt0-fxrp-swap)
+- [x402 Payment Protocol](https://dev.flare.network/fxrp/token-interactions/x402-payments)
+- [FXRP Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [List FAssets Agents](https://dev.flare.network/fassets/developer-guides/fassets-list-agents)
 - [Read FAssets Agent Details](https://dev.flare.network/fassets/developer-guides/fassets-agent-details)
 
