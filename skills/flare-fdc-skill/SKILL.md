@@ -64,6 +64,15 @@ function processProof(IEVMTransaction.Proof calldata proof) external {
 
 **Env:** `VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, `COSTON2_DA_LAYER_URL` (or equivalent for mainnet). Testnets use `testETH`/`testFLR`/`testSGB` as source IDs.
 
+**Verifier API keys** are required for both testnet and mainnet verifiers. Set them in `.env` (see [flare-hardhat-starter `.env.example`](https://github.com/flare-foundation/flare-hardhat-starter/blob/main/.env.example)):
+
+```env
+VERIFIER_API_KEY_TESTNET="00000000-0000-0000-0000-000000000000"
+VERIFIER_API_KEY_MAINNET="00000000-0000-0000-0000-000000000000"
+```
+
+Pass the key via the `X-apikey` header when calling verifier endpoints. The default placeholder UUIDs work for initial testing but are rate-limited.
+
 ## Example Repos and Where to Look
 
 - **[flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter):**
