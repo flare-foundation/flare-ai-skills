@@ -19,8 +19,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - **Skill guide:** [redemption-guide.md](redemption-guide.md) — complete redemption walkthrough (approve → redeem → agent pays → default handling)
 - [Developer Guides Index](https://dev.flare.network/fassets/developer-guides)
 - [Get Asset Manager Address](https://dev.flare.network/fassets/developer-guides/fassets-asset-manager-address-contracts-registry) — From Flare Contract Registry
-- [Read FAssets Settings (Solidity)](https://dev.flare.network/fassets/developer-guides/fassets-settings-solidity) — Lot size, value via FTSO
-- [Read FAssets Settings (Node.js)](https://dev.flare.network/fassets/developer-guides/fassets-settings-node)
+- [Read FAssets Settings (Solidity)](https://dev.flare.network/fassets/developer-guides/fassets-settings-solidity) — Fetch lot size and asset decimals via a Solidity contract using `ContractRegistry.getAssetManagerFXRP()` → `getSettings()`; deploy and interact with Hardhat + `@flarenetwork/flare-periphery-contracts`
+- [Read FAssets Settings (Node.js)](https://dev.flare.network/fassets/developer-guides/fassets-settings-node) — TypeScript script using **viem** and **`@flarenetwork/flare-wagmi-periphery-package`** (the recommended periphery package for Node.js); resolves AssetManager via registry, reads `getSettings()`, fetches XRP/USD price from FtsoV2, and calculates lot value in USD
 - [Mint FAssets](https://dev.flare.network/fassets/developer-guides/fassets-mint) — Reserve collateral, XRP payment, FDC proof, executeMinting
 - [Mint with Executor](https://dev.flare.network/fassets/developer-guides/fassets-mint-executor)
 - [Redeem FAssets](https://dev.flare.network/fassets/developer-guides/fassets-redeem)
@@ -39,6 +39,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - **Skill script:** [scripts/redeem-fassets.ts](scripts/redeem-fassets.ts) — redeem FXRP for underlying XRP (write tx)
 - **Skill script:** [scripts/swap-usdt0-to-fxrp.ts](scripts/swap-usdt0-to-fxrp.ts) — swap USDT0 to FXRP via SparkDEX Uniswap V3 (write tx)
 - [Swap USDT0 to FXRP](https://dev.flare.network/fxrp/token-interactions/usdt0-fxrp-swap)
+- [Gasless FXRP Payments](https://dev.flare.network/fxrp/token-interactions/gasless-fxrp-payments) — EIP-712 meta-transactions: user signs off-chain, relayer submits on-chain; `GaslessPaymentForwarder` contract handles nonce/replay protection and fetches FXRP from registry at runtime; uses `ethers`, `viem`, `@openzeppelin/contracts`, `@flarenetwork/flare-periphery-contracts`
+- **Skill guide:** [gasless-payments-guide.md](gasless-payments-guide.md) — full walkthrough of gasless FXRP payments (architecture, contract, relayer, replay protection, one-time approval)
 - [x402 Payment Protocol](https://dev.flare.network/fxrp/token-interactions/x402-payments)
 - [FXRP Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [List FAssets Agents](https://dev.flare.network/fassets/developer-guides/fassets-list-agents)

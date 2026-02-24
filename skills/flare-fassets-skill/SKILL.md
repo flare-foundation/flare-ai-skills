@@ -118,6 +118,59 @@ Must complete before `lastUnderlyingBlock` and `lastUnderlyingTimestamp`.
 
 Prefer agents with status NORMAL.
 
+### Read FAssets Settings
+
+FAssets operational parameters (lot size, asset decimals, collateral ratios, fees, thresholds) are read from the **AssetManager** via `getSettings()`. Two official approaches:
+
+#### Solidity (Hardhat)
+
+Use `@flarenetwork/flare-periphery-contracts` for typed contract access:
+
+```solidity
+// ContractRegistry.getAssetManagerFXRP() resolves the AssetManager at runtime
+IAssetManager am = ContractRegistry.getAssetManagerFXRP();
+IAssetManager.Settings memory s = am.getSettings();
+// s.lotSizeAMG — lot size in AMG units
+// s.assetDecimals — decimal places for the FAsset
+uint256 lotSizeXRP = s.lotSizeAMG / (10 ** s.assetDecimals);
+```
+
+Run the interaction script:
+```
+npx hardhat run scripts/fassets/getLotSize.ts --network coston2
+```
+
+Expected output (example):
+```
+FAssetsSettings deployed to: 0x40deEaA76224Ca9439D4e1c86F827Be829b89D9E
+Lot size: 20000000 | Decimals: 6 | Lot size in XRP: 20
+```
+
+**Guide:** [Read FAssets Settings (Solidity)](https://dev.flare.network/fassets/developer-guides/fassets-settings-solidity)
+
+#### Node.js (TypeScript + viem)
+
+**Use `@flarenetwork/flare-wagmi-periphery-package`** — this is the recommended package for TypeScript/Node.js scripts. It provides all typed contract ABIs for Flare networks (including Coston2) and integrates directly with viem, eliminating the need for manual ABI definitions.
+
+Install dependencies:
+```
+npm install --save-dev typescript viem @flarenetwork/flare-wagmi-periphery-package
+```
+
+Key steps:
+1. Import the `coston2` namespace from `@flarenetwork/flare-wagmi-periphery-package` — gives you typed ABIs for the Coston2 network.
+2. Create a viem public client connected to Flare Testnet Coston2.
+3. Resolve the FXRP AssetManager address via `FlareContractRegistry` (`getContractAddressByName("AssetManagerFXRP")`).
+4. Call `getSettings()` → read `lotSizeAMG` and `assetDecimals` → compute lot size in XRP.
+5. Resolve `FtsoV2` address and call `getFeedById` with the XRP/USD feed ID (`0x015852502f55534400000000000000000000000000`) to get the current price.
+6. Calculate lot value in USD.
+
+Expected output (example): Lot Size: 10 FXRP · XRP/USD: ~2.84 · Lot value: ~$28.44
+
+**Guide:** [Read FAssets Settings (Node.js)](https://dev.flare.network/fassets/developer-guides/fassets-settings-node)
+
+**Skill script:** [scripts/get-fassets-settings.ts](scripts/get-fassets-settings.ts) — reads lot size, decimals, and XRP/USD price (uses ethers; for new projects prefer viem + `@flarenetwork/flare-wagmi-periphery-package` as shown in the Node.js guide above).
+
 ### Redeeming
 
 Request redemption (burn FAssets on Flare); the chosen agent pays out the underlying asset on the underlying chain.
@@ -125,6 +178,14 @@ Request redemption (burn FAssets on Flare); the chosen agent pays out the underl
 See [FAssets Redemption](https://dev.flare.network/fassets/redemption) and [Redeem FAssets](https://dev.flare.network/fassets/developer-guides/fassets-redeem) for the full flow (redemption request, queue, agent payout, optional swap-and-redeem / auto-redeem).
 
 **Prerequisites (from Flare docs):** Flare Hardhat Starter Kit, `@flarenetwork/flare-periphery-contracts`, and for XRP payments the `xrpl` package.
+
+### Gasless FXRP Payments
+
+FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed payment requests. Users sign off-chain; a relayer submits on-chain and pays gas.
+
+**Skill guide:** [gasless-payments-guide.md](gasless-payments-guide.md) — full walkthrough (architecture, `GaslessPaymentForwarder` contract, relayer service, replay protection, one-time approval setup).
+
+**Guide:** [Gasless FXRP Payments](https://dev.flare.network/fxrp/token-interactions/gasless-fxrp-payments)
 
 ## Terminology
 
