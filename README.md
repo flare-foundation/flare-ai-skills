@@ -189,6 +189,23 @@ flare-ai-skills/
 
 The `marketplace.json` defines the marketplace name (`flare-ai-skills`) and lists each plugin with its source path. Users reference plugins as `plugin-name@marketplace-name`.
 
+### How to update skills
+
+To update installed skills to the latest version, run:
+
+```bash
+npx skills update
+```
+
+This updates all installed skills. To update a specific skill only, reinstall it:
+
+```bash
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
+```
+
 ### Option C: Manual install
 
 1. Clone this repository.
