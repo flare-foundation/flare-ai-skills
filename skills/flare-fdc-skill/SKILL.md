@@ -62,6 +62,8 @@ function processProof(IEVMTransaction.Proof calldata proof) external {
 - **Fetch:** POST to DA Layer `.../api/v1/fdc/proof-by-request-round-raw` with `votingRoundId`, `requestBytes`.
 - **Decode:** Use artifact’s response type (e.g. `IEVMTransactionVerification._json.abi[0].inputs[0].components[1]`) to decode `response_hex`; build `{ merkleProof: proof.proof, data: decodedResponse }` and call contract.
 
+**Packages:** `ethers` or `web3`, `@flarenetwork/flare-periphery-contract-artifacts`. For wagmi/viem typed contract interactions, use [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
+
 **Env:** `VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, `COSTON2_DA_LAYER_URL` (or equivalent for mainnet). Testnets use `testETH`/`testFLR`/`testSGB` as source IDs.
 
 **Verifier API keys** are required for both testnet and mainnet verifiers. Set them in `.env` (see [flare-hardhat-starter `.env.example`](https://github.com/flare-foundation/flare-hardhat-starter/blob/main/.env.example)):

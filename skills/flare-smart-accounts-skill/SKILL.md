@@ -490,6 +490,8 @@ The `MasterAccountController` is the central contract for smart accounts.
 
 ## TypeScript Integration (Viem)
 
+**Packages:** `viem`, `xrpl`. For wagmi/viem typed contract interactions, use [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
+
 ### Setup
 
 ```typescript
