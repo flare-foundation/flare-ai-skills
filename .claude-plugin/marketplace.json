@@ -44,6 +44,15 @@
       "tags": ["flare", "smart-accounts", "xrpl", "blockchain", "web3"],
       "source": "./skills/flare-smart-accounts-skill",
       "strict": false
+    },
+    {
+      "name": "flare-general",
+      "description": "General Flare network knowledge for developers. Covers what Flare is, core protocols (FTSO, FDC, FAssets, Smart Accounts), networks, chain IDs, RPC endpoints, block explorers, faucets, native tokens, consensus, EVM compatibility, and developer tooling (Hardhat, Foundry, viem/wagmi).",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": ["flare", "blockchain", "evm", "web3", "network", "rpc", "getting-started"],
+      "source": "./skills/flare-general-skill",
+      "strict": false
     }
   ]
 }

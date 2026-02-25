@@ -24,12 +24,20 @@ Same `SKILL.md` format works across tools.
 
 | Skill | Description |
 |-------|-------------|
+| **[flare-general](skills/flare-general-skill/SKILL.md)** | General Flare knowledge—what Flare is, core protocols, networks, chain IDs, RPC endpoints, explorers, faucets, EVM setup, and developer tooling |
 | **[flare-ftso](skills/flare-ftso-skill/SKILL.md)** | FTSO—decentralized block-latency price feeds (~1.8s), Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation |
 | **[flare-fassets](skills/flare-fassets-skill/SKILL.md)** | FAssets—wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration |
 | **[flare-fdc](skills/flare-fdc-skill/SKILL.md)** | Flare Data Connector—attestation types (EVMTransaction, Web2Json, Payment, etc.), request flow, Merkle proofs, verifier/DA Layer, contract verification |
 | **[flare-smart-accounts](skills/flare-smart-accounts-skill/SKILL.md)** | Smart Accounts—account abstraction for XRPL users to interact with Flare without owning FLR |
 
 ## What's in the skills
+
+### flare-general
+- **Flare overview:** Interoperable EVM L1, enshrined protocols, fast finality (~1.8s), Snowman++ consensus
+- **Networks:** Flare Mainnet (14), Coston2 (114), Songbird (19), Coston (16) — chain IDs, RPC URLs, explorers, faucets
+- **Core protocols:** FTSO, FDC, FAssets, Smart Accounts — what each does and when to use a more specific skill
+- **Developer tooling:** Hardhat/Foundry setup, ContractRegistry pattern, EVM version (cancun), key npm packages
+- **Wagmi/viem:** `@flarenetwork/flare-wagmi-periphery-package` for typed contract interactions
 
 ### flare-ftso
 - **FTSO overview:** Enshrined oracle, block-latency feeds (~1.8s), ~100 data providers, stake-weighted VRF selection
@@ -67,6 +75,7 @@ From your project or any directory, run:
 
 ```bash
 # Install one or more skills (Cursor will use them when skills are enabled)
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-general
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
@@ -99,6 +108,9 @@ cp -r /path/to/flare-ai-skills/skills/flare-fassets-skill .cursor/skills/
 Install skills with a single command:
 
 ```bash
+# Install General skill
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-general
+
 # Install FTSO skill
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
 
@@ -115,6 +127,8 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 For more information, visit the [skills.sh platform page](https://skills.sh/flare-foundation/flare-ai-skills).
 
 Then use the skills in your AI agent, for example:
+
+> Use the flare-general skill and explain how to set up a Hardhat project for Flare development.
 
 > Use the flare-ftso skill and show how to consume FTSO price feeds in a Solidity contract.
 
@@ -136,6 +150,7 @@ To install skills for your personal use in Claude Code:
    ```
 2. Install the skills:
    ```
+   /plugin install flare-general@flare-ai-skills
    /plugin install flare-ftso@flare-ai-skills
    /plugin install flare-fassets@flare-ai-skills
    /plugin install flare-fdc@flare-ai-skills
@@ -150,6 +165,7 @@ To automatically provide these skills to everyone working in a repository, confi
 ```json
 {
   "enabledPlugins": {
+    "flare-general@flare-ai-skills": true,
     "flare-ftso@flare-ai-skills": true,
     "flare-fassets@flare-ai-skills": true,
     "flare-fdc@flare-ai-skills": true,
@@ -177,6 +193,8 @@ flare-ai-skills/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog listing all plugins
 └── skills/
+    ├── flare-general-skill/
+    │   └── SKILL.md
     ├── flare-ftso-skill/
     │   └── SKILL.md
     ├── flare-fassets-skill/
@@ -200,6 +218,7 @@ npx skills update
 This updates all installed skills. To update a specific skill only, reinstall it:
 
 ```bash
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-general
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-ftso
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
@@ -210,6 +229,7 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 
 1. Clone this repository.
 2. Install or symlink the desired skill folder(s) following your tool's official skills installation docs (see links below):
+   - **`skills/flare-general-skill/`** for general Flare knowledge
    - **`skills/flare-ftso-skill/`** for FTSO
    - **`skills/flare-fassets-skill/`** for FAssets
    - **`skills/flare-fdc-skill/`** for FDC
@@ -236,6 +256,9 @@ flare-ai-skills/
 ├── LICENSE                          # MIT
 ├── .gitignore
 └── skills/
+ ├── flare-general-skill/         # General Flare knowledge skill
+ │   ├── SKILL.md                 # Main skill instructions
+ │   └── reference.md             # Flare Developer Hub links
  ├── flare-ftso-skill/            # FTSO skill
  │   ├── SKILL.md                 # Main skill instructions
  │   ├── reference.md             # Flare Developer Hub links
@@ -268,6 +291,8 @@ Each skill folder (with `SKILL.md` and `reference.md`) can be installed independ
 ## Links
 
 - [Install via skills.sh](https://skills.sh/flare-foundation/flare-ai-skills) — one-command install for Cursor, Claude Code, Codex, and more
+- [Flare Developer Hub](https://dev.flare.network/)
+- [Flare Network Overview](https://dev.flare.network/network/overview)
 - [Flare FTSO Overview](https://dev.flare.network/ftso/overview)
 - [Flare FAssets Overview](https://dev.flare.network/fassets/overview)
 - [Flare FDC Overview](https://dev.flare.network/fdc/overview)
