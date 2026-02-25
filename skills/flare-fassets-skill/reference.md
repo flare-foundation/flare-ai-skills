@@ -45,6 +45,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [FXRP Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [List FAssets Agents](https://dev.flare.network/fassets/developer-guides/fassets-list-agents)
 - [Read FAssets Agent Details](https://dev.flare.network/fassets/developer-guides/fassets-agent-details)
+- **Skill guide:** [agent-details-guide.md](agent-details-guide.md) — read agent name, description, icon URL, and terms of use from `AgentOwnerRegistry`
 
 ## Contract Reference
 

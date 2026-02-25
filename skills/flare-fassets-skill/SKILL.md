@@ -183,6 +183,10 @@ See [FAssets Redemption](https://dev.flare.network/fassets/redemption) and [Rede
 
 FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed payment requests. Users sign off-chain; a relayer submits on-chain and pays gas.
 
+**Skill guide:** [agent-details-guide.md](agent-details-guide.md) — read agent name, description, icon URL, and terms of use from `AgentOwnerRegistry`.
+
+**Guide:** [Read FAssets Agent Details](https://dev.flare.network/fassets/developer-guides/fassets-agent-details)
+
 **Skill guide:** [gasless-payments-guide.md](gasless-payments-guide.md) — full walkthrough (architecture, `GaslessPaymentForwarder` contract, relayer service, replay protection, one-time approval setup).
 
 **Guide:** [Gasless FXRP Payments](https://dev.flare.network/fxrp/token-interactions/gasless-fxrp-payments)
