@@ -8,7 +8,7 @@ description: Provides domain knowledge and guidance for Flare Smart Accounts—a
 This skill provides informational guidance only.
 
 - It does NOT execute blockchain transactions
-- It does NOT store or transmit private keys
+- It does NOT store or transmit signing keys
 - All signing must occur in user-controlled wallets
 - External data should be validated by the developer
 - Users are responsible for secure key management
@@ -324,7 +324,7 @@ cp .env.example .env
 
 Copy `.env.example` to `.env` and fill in your values. Required fields are documented in the repo's `.env.example`: your XRPL testnet seed, your Flare signing key, the Coston2 RPC URL, and the XRPL RPC URL.
 
-**Security:** Signing keys must never be shared with AI assistants or unvetted automation. Use only in secure, user-controlled tooling. Get XRPL testnet credentials from [XRP Faucets](https://xrpl.org/resources/dev-tools/xrp-faucets).
+**Security:** Signing keys must never be shared with AI assistants or unvetted automation. Use only in secure, user-controlled tooling. Get XRPL testnet tokens from [XRP Faucets](https://xrpl.org/resources/dev-tools/xrp-faucets).
 
 ### Command Syntax
 

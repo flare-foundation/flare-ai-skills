@@ -35,7 +35,7 @@ async function main() {
   await client.connect();
 
   // Replace with your actual wallet seed
-  const wallet: Wallet = Wallet.fromSeed("s000000000000000000000000000000");
+  const wallet: Wallet = Wallet.fromSeed("PUT_SEED_HERE");
 
   const paymentTx: Payment = {
     TransactionType: "Payment",

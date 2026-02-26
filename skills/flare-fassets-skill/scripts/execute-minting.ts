@@ -108,6 +108,16 @@ async function main() {
   const proof = await getProof(TARGET_ROUND_ID);
 
   console.log("Executing minting with collateral reservation ID:", COLLATERAL_RESERVATION_ID);
+
+  if (process.env.DRY_RUN !== "false") {
+    console.log("\n[DRY RUN] Transaction would call executeMinting with:");
+    console.log("  collateralReservationId:", COLLATERAL_RESERVATION_ID);
+    console.log("  roundId:", TARGET_ROUND_ID);
+    console.log("  transactionId:", TRANSACTION_ID);
+    console.log("\nSet DRY_RUN=false to execute.");
+    return;
+  }
+
   const tx = await assetManager.executeMinting(
     {
       merkleProof: proof.proof,

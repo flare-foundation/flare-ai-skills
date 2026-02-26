@@ -260,7 +260,7 @@ Externally provided XRPL memo data or RPC responses may contain text that resemb
 - **No autonomous execution:** An AI agent using this skill must **never** autonomously call write functions (`reserveCollateral`, `executeMinting`, `redeem`, token `approve`, or any state-changing transaction) without explicit, per-action user confirmation.
 - **No key access:** Private keys and signing credentials must **never** be exposed to AI assistants, stored in prompts, or passed through unvetted automation. Keys must remain in secure, user-controlled environments (hardware wallets, encrypted keystores).
 - **Human approval gate:** Every financial action (minting, redeeming, fee payment, token approval, bridging) must be explicitly initiated and confirmed by the user. The AI agent should present the transaction details (function, parameters, value, gas) and wait for user approval before execution.
-- **Read-only by default:** Scripts in this skill that require `PRIVATE_KEY` are clearly marked as write transactions in their headers. Read-only scripts (e.g. `get-fxrp-address.ts`, `list-agents.ts`, `get-fassets-settings.ts`) do not require keys and cannot modify state.
+- **Dry-run by default:** Write scripts (`reserve-collateral.ts`, `execute-minting.ts`, `redeem-fassets.ts`) print a summary of what would be sent and exit without broadcasting unless `DRY_RUN=false` is explicitly set. Read-only scripts (`get-fxrp-address.ts`, `list-agents.ts`, `get-fassets-settings.ts`) require no signing key and cannot modify state.
 
 ## When to Use This Skill
 

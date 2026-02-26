@@ -83,6 +83,14 @@ async function main() {
     throw new Error(`Insufficient FXRP balance. Have: ${balance}, need: ${amountToRedeem}`);
   }
 
+  if (process.env.DRY_RUN !== "false") {
+    console.log("\n[DRY RUN] Transactions would:");
+    console.log("  1. approve AssetManager to spend", amountToRedeem.toString(), "FXRP");
+    console.log("  2. redeem", LOTS_TO_REDEEM, "lot(s) to", UNDERLYING_ADDRESS);
+    console.log("\nSet DRY_RUN=false to execute.");
+    return;
+  }
+
   // Approve AssetManager to spend FXRP
   console.log("Approving AssetManager to spend FXRP...");
   const approveTx = await fxrp.approve(assetManagerAddress, amountToRedeem);
