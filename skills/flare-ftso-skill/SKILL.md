@@ -130,6 +130,107 @@ Use `web3` or `ethers` to call the FtsoV2 contract directly via RPC. The FtsoV2 
 
 **Packages:** `web3`, `@flarenetwork/flare-periphery-contract-artifacts`. For ethers, use `@flarenetwork/flare-periphery-contracts` and the contract ABI from the artifacts package. For wagmi/viem integration, use [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
 
+## Consuming Feeds in Frontend
+
+When building a frontend application, use **wagmi** with the official Flare wagmi periphery package.
+
+### Packages
+
+```bash
+npm install wagmi viem @tanstack/react-query @flarenetwork/flare-wagmi-periphery-package
+```
+
+### Chain Configuration
+
+`@flarenetwork/flare-wagmi-periphery-package` exports pre-configured chain objects for all Flare networks:
+
+```ts
+import { flare, coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
+import { createConfig, http } from "wagmi";
+
+export const config = createConfig({
+  chains: [flare, coston2],
+  transports: {
+    [flare.id]: http(),
+    [coston2.id]: http(),
+  },
+});
+```
+
+### Resolving the FtsoV2 Contract Address
+
+Resolve the FtsoV2 address at runtime via `ContractRegistry` — do not hardcode it. Use `useReadContract` to call `getContractAddressByName`:
+
+```ts
+import { useReadContract } from "wagmi";
+import { CONTRACT_REGISTRY_ADDRESS, contractRegistryAbi } from "@flarenetwork/flare-wagmi-periphery-package";
+
+const { data: ftsoV2Address } = useReadContract({
+  address: CONTRACT_REGISTRY_ADDRESS,
+  abi: contractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["FtsoV2"],
+});
+```
+
+### Reading a Feed with `useReadContract`
+
+Once you have the FtsoV2 address, read a block-latency feed:
+
+```ts
+import { useReadContract } from "wagmi";
+import { ftsoV2Abi } from "@flarenetwork/flare-wagmi-periphery-package";
+
+const FLR_USD_FEED_ID = "0x01464c522f55534400000000000000000000000000";
+
+const { data, isLoading } = useReadContract({
+  address: ftsoV2Address,
+  abi: ftsoV2Abi,
+  functionName: "getFeedByIdInWei",
+  args: [FLR_USD_FEED_ID],
+  query: { refetchInterval: 2000 }, // refresh every ~2 blocks
+});
+
+// data: [value: bigint, timestamp: bigint]
+// value is already scaled to 18 decimals (wei)
+```
+
+### Reading Multiple Feeds
+
+```ts
+const { data } = useReadContract({
+  address: ftsoV2Address,
+  abi: ftsoV2Abi,
+  functionName: "getFeedsByIdInWei",
+  args: [[BTC_USD_FEED_ID, ETH_USD_FEED_ID, FLR_USD_FEED_ID]],
+  query: { refetchInterval: 2000 },
+});
+
+// data: [values: bigint[], timestamp: bigint]
+```
+
+### Display Conversion
+
+`getFeedByIdInWei` / `getFeedsByIdInWei` return values scaled to 18 decimals. To display as a human-readable price:
+
+```ts
+import { formatUnits } from "viem";
+
+const price = formatUnits(data[0], 18); // e.g. "69004.2"
+```
+
+### Testnet (Coston2) vs Mainnet
+
+On Coston2, use `TestFtsoV2Interface` (`getContractAddressByName("FtsoV2")` returns the test interface — all methods are `view`, no fees required). On mainnet Flare, payable methods may require a fee calculated via `IFeeCalculator`.
+
+### Key Notes for Frontend
+
+- **Never hardcode the FtsoV2 address** — always resolve via `ContractRegistry`.
+- Block-latency feed view calls (`getFeedByIdInWei`, `getFeedsByIdInWei`) are **free** — no `value` needed.
+- Set `refetchInterval: ~2000ms` to keep feeds current (≈1.8s block time).
+- Use `formatUnits(value, 18)` from viem to convert wei-scaled values to display strings.
+- The `@flarenetwork/flare-wagmi-periphery-package` exports ABIs, chain configs, and contract registry addresses — use these instead of copying ABI JSON manually.
+
 ## Making a Volatility Incentive
 
 During periods of high volatility, anyone can pay a fee to temporarily increase the expected sample size of FTSO block-latency feeds, enabling faster price convergence. This is done via the `FastUpdatesIncentiveManager` contract's `offerIncentive` method.
@@ -199,6 +300,7 @@ Both include feed consumption, change-quote-feed, and anchor feed verification e
 ## When to Use This Skill
 
 - Consuming FTSO price feeds onchain (Solidity) or offchain (JS/TS).
+- Building a React/Next.js frontend that reads FTSO feeds using wagmi and `@flarenetwork/flare-wagmi-periphery-package`.
 - Integrating FtsoV2Interface, TestFtsoV2Interface, or FeeCalculator.
 - Verifying Scaling anchor feed data with Merkle proofs.
 - Building cross-pair feeds (change quote feed).
