@@ -93,6 +93,16 @@ async function main() {
   const fee = await assetManager.collateralReservationFee(LOTS_TO_MINT);
   console.log("Collateral reservation fee:", fee.toString());
 
+  if (process.env.DRY_RUN !== "false") {
+    console.log("\n[DRY RUN] Transaction would call reserveCollateral with:");
+    console.log("  agentVault:", agentVault);
+    console.log("  lots:", LOTS_TO_MINT);
+    console.log("  feeBIPS:", agentInfo.feeBIPS.toString());
+    console.log("  value (fee):", fee.toString());
+    console.log("\nSet DRY_RUN=false to execute.");
+    return;
+  }
+
   const tx = await assetManager.reserveCollateral(
     agentVault,
     LOTS_TO_MINT,
