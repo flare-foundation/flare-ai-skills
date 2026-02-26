@@ -3,6 +3,18 @@ name: flare-general
 description: Provides general domain knowledge about the Flare network—what it is, its core protocols (FTSO, FDC, FAssets, Smart Accounts), networks (Mainnet, Coston2, Songbird, Coston), RPC endpoints, block explorers, faucets, chain IDs, native tokens, consensus, and developer tooling. Use when answering general Flare questions, helping developers get started, or when no more specific Flare skill applies.
 ---
 
+## Security & Safe Usage
+
+This skill provides informational guidance only.
+
+- It does NOT execute blockchain transactions
+- It does NOT store or transmit private keys
+- All signing must occur in user-controlled wallets
+- External data should be validated by the developer
+- Users are responsible for secure key management
+
+No executable code or automated financial actions are included.
+
 # Flare Network — General Knowledge
 
 ## What Flare Is
@@ -445,7 +457,7 @@ STPs are used to test changes on Songbird before proposing them as FIPs on Flare
 ### Management Group
 
 Introduced in FIP.02/STP.03 — a governance body of FTSO data providers that votes on:
-- Punitive actions against malicious providers
+- Punitive actions against non-compliant providers
 - New data feed additions
 - New attestation types for FDC
 - Protocol parameter adjustments
