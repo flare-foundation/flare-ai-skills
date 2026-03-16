@@ -20,6 +20,9 @@ IGNORE_LIST=(
   "https://fdc-verifiers-testnet.flare.network/"
   "https://fdc-verifiers-mainnet.flare.network"
   "https://fdc-verifiers-mainnet.flare.network/"
+  "https://{network}-explorer.flare.network/api"
+  "https://coston2-explorer.flare.network/api"
+  "https://dune.com/flare/flare-network-overview"
 )
 
 # Sites that block automated requests (matched as substring)
