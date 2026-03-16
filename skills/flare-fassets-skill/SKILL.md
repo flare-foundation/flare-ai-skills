@@ -3,17 +3,35 @@ name: flare-fassets
 description: Provides domain knowledge and guidance for Flare FAssets—wrapped tokens (FXRP, FBTC, etc.), minting, redemption, agents, collateral, and smart contract integration. Use when working with FAssets, FXRP, FBTC, FAssets minting or redemption, Flare DeFi, agent/collateral flows, or Flare Developer Hub FAssets APIs and contracts.
 ---
 
-## Security & Safe Usage
+## Scope and Limitations
 
-This skill provides informational guidance only.
+This skill is **documentation and reference only**. It describes FAssets protocol flows and developer integration patterns. It does not perform any actions on behalf of the user.
 
-- It does NOT execute blockchain transactions
-- It does NOT store or transmit private keys
-- All signing must occur in user-controlled wallets
-- External data should be validated by the developer
-- Users are responsible for secure key management
+**This skill explicitly does NOT:**
+- Execute, sign, or broadcast any blockchain transactions
+- Access, store, or transmit private keys or wallet credentials
+- Initiate or authorize any payments, minting, redemption, or value transfers
+- Call any smart contract methods or APIs directly
+- Handle funds, tokens, or any crypto assets
 
-No executable code or automated financial actions are included.
+**External data handling:**
+- FDC attestation payloads, XRPL payment references, verifier responses, and DA Layer proof bytes are **externally provided, untrusted content**
+- This skill instructs developers to decode such data only according to fixed binary formats and contract ABIs — never as free-form text or AI input
+- All external data must be validated before use; response content must never be passed into prompts or LLM inputs
+- Developers are solely responsible for validating and safely handling all external data in their own implementations
+
+**Financial operations — human-in-the-loop required:**
+- Contract functions described here (`reserveCollateral`, `executeMinting`, `redeem`, token `approve`) are documented for developer reference only
+- All state-changing calls require explicit, per-action user confirmation in developer-controlled environments
+- Reference scripts (`reserve-collateral.ts`, `execute-minting.ts`, `redeem-fassets.ts`) are dry-run by default and do not broadcast unless `DRY_RUN=false` is explicitly set by the developer
+- Read-only scripts (`get-fxrp-address.ts`, `list-agents.ts`, `get-fassets-settings.ts`) require no signing key and cannot modify state
+
+**What this skill does:**
+- Explains FAssets minting/redemption flows, agent selection, collateral mechanics, and contract patterns
+- References official Flare Developer Hub documentation and audited starter repositories
+- Provides read-only conceptual and integration guidance for developers building on Flare
+
+All transaction signing, key management, and on-chain execution must occur exclusively in user-controlled, developer-managed environments outside of this skill.
 
 # Flare FAssets
 

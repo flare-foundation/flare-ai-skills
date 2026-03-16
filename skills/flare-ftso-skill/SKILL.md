@@ -3,17 +3,35 @@ name: flare-ftso
 description: Provides domain knowledge and guidance for the Flare Time Series Oracle (FTSO)—block-latency feeds, Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation, and smart contract integration. Use when working with FTSO, price feeds, oracle data, feed consumption, volatility incentives, or Flare Developer Hub FTSO guides and starter repos.
 ---
 
-## Security & Safe Usage
+## Scope and Limitations
 
-This skill provides informational guidance only.
+This skill is **documentation and reference only**. It describes FTSO price feeds, integration patterns, and developer tooling. It does not perform any actions on behalf of the user.
 
-- It does NOT execute blockchain transactions
-- It does NOT store or transmit private keys
-- All signing must occur in user-controlled wallets
-- External data should be validated by the developer
-- Users are responsible for secure key management
+**This skill explicitly does NOT:**
+- Execute, sign, or broadcast any blockchain transactions
+- Access, store, or transmit private keys or wallet credentials
+- Initiate or authorize any fee payments, volatility incentives, delegation, or staking operations
+- Call any smart contract methods or APIs directly
+- Handle funds, tokens, or any crypto assets
 
-No executable code or automated financial actions are included.
+**External data handling:**
+- FTSO feed values, Merkle proofs, and RPC responses are **externally provided, untrusted content** originating from independent on-chain data providers
+- Feed data consists of structured numeric values (`uint256` prices, `int8` decimals, `uint64` timestamps) and must be decoded only through typed ABI interfaces
+- Feed values, proof structs, and RPC responses must **never** be passed into prompts, chat contexts, or text-processing pipelines
+- Anchor feed data must be verified using Merkle proofs (`verifyFeedData`) where cryptographic validation is required
+- Developers are solely responsible for safely handling all external data in their own implementations
+
+**Financial operations — human-in-the-loop required:**
+- Payable operations documented here (`getFeedsById{value: fee}`, `FastUpdatesIncentiveManager.offerIncentive`, delegation, staking) are **reference material for developers**
+- All fee payments, volatility incentives, and on-chain value transfers require explicit, per-action user confirmation in developer-controlled environments
+- Private keys must never be exposed to AI assistants or unvetted automation
+
+**What this skill does:**
+- Explains FTSO architecture, feed types, feed IDs, and contract patterns
+- References official Flare Developer Hub documentation and audited starter repositories
+- Provides read-only conceptual and integration guidance for developers building on Flare
+
+All transaction signing, key management, and on-chain execution must occur exclusively in user-controlled, developer-managed environments outside of this skill.
 
 # Flare Time Series Oracle (FTSO)
 

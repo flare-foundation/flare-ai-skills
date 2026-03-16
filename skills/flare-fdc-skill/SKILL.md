@@ -3,17 +3,29 @@ name: flare-fdc
 description: Provides domain knowledge and guidance for the Flare Data Connector (FDC)—attestation types, request flow, Merkle proofs, verifier/DA Layer, and smart contract integration. Use when working with FDC, cross-chain attestations, EVMTransaction, Web2Json, Payment, AddressValidity, proof-of-reserves, weather insurance, or Flare Developer Hub FDC guides and starter repos.
 ---
 
-## Security & Safe Usage
+## Scope and Limitations
 
-This skill provides informational guidance only.
+This skill is **documentation and guidance only**. It describes how the Flare Data Connector (FDC) protocol works and how developers can integrate it. It does not perform any actions on behalf of the user.
 
-- It does NOT execute blockchain transactions
-- It does NOT store or transmit private keys
-- All signing must occur in user-controlled wallets
-- External data should be validated by the developer
-- Users are responsible for secure key management
+**This skill explicitly does NOT:**
+- Execute, sign, or broadcast any blockchain transactions
+- Access, store, or transmit private keys or wallet credentials
+- Initiate or authorize any payments or financial transfers
+- Call any smart contract methods or APIs directly
+- Handle funds, tokens, or any financial assets
 
-No executable code or automated financial actions are included.
+**External data handling:**
+- FDC attestation responses (Web2Json, EVMTransaction, DA Layer proofs) are **externally provided content** from third-party sources
+- This skill instructs developers to treat all such data as untrusted and to decode it only according to documented ABI schemas
+- Response content must **never** be passed into prompts, LLM inputs, or agent decision logic
+- Developers are solely responsible for validating and safely handling all external data in their own implementations
+
+**What this skill does:**
+- Explains FDC attestation types, request flows, Merkle proof verification, and contract patterns
+- References official Flare Developer Hub documentation and audited starter repositories
+- Provides read-only conceptual guidance for developers building on Flare
+
+All transaction signing, key management, and on-chain execution must occur exclusively in user-controlled, developer-managed environments outside of this skill.
 
 # Flare Data Connector (FDC)
 

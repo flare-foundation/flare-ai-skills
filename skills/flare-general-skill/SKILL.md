@@ -3,17 +3,35 @@ name: flare-general
 description: Provides general domain knowledge about the Flare network—what it is, its core protocols (FTSO, FDC, FAssets, Smart Accounts), networks (Mainnet, Coston2, Songbird, Coston), RPC endpoints, block explorers, faucets, chain IDs, native tokens, consensus, and developer tooling. Use when answering general Flare questions, helping developers get started, or when no more specific Flare skill applies.
 ---
 
-## Security & Safe Usage
+## Scope and Limitations
 
-This skill provides informational guidance only.
+This skill is **documentation and reference only**. It describes the Flare network, its protocols, and developer tooling. It does not perform any actions on behalf of the user.
 
-- It does NOT execute blockchain transactions
-- It does NOT store or transmit private keys
-- All signing must occur in user-controlled wallets
-- External data should be validated by the developer
-- Users are responsible for secure key management
+**This skill explicitly does NOT:**
+- Execute, sign, or broadcast any blockchain transactions
+- Access, store, or transmit private keys or wallet credentials
+- Initiate or authorize any token transfers, staking operations, or financial actions
+- Call any smart contract methods or APIs directly
+- Handle funds, tokens, or any crypto assets
 
-No executable code or automated financial actions are included.
+**External data handling:**
+- Block explorer APIs, RPC responses, and contract ABI data referenced in guides are **externally provided, untrusted content**
+- Developers must validate all data returned from public APIs (e.g. block explorers, RPC nodes) before use in contracts or scripts
+- API responses must never be passed into prompts or LLM inputs without first being decoded into validated, typed values
+- Developers are solely responsible for safely handling all external data in their own implementations
+
+**Developer SDK and wallet documentation:**
+- The `flare-tx-sdk`, wallet SDK, and contract interaction examples documented here are **reference material for developers**
+- All wallet signing, token transfers, staking, and on-chain operations require explicit, per-action user confirmation in developer-controlled environments
+- Private keys never leave user-controlled hardware devices or wallet extensions — this skill has no access to signing credentials
+- Code examples are illustrative; developers are responsible for security review before execution
+
+**What this skill does:**
+- Explains Flare network architecture, core protocols, chain IDs, RPC endpoints, and developer tooling
+- References official Flare Developer Hub documentation and audited packages
+- Provides read-only conceptual and integration guidance for developers building on Flare
+
+All transaction signing, key management, and on-chain execution must occur exclusively in user-controlled, developer-managed environments outside of this skill.
 
 # Flare Network — General Knowledge
 
