@@ -119,6 +119,7 @@ Full directory: [dev.flare.network/network/developer-tools](https://dev.flare.ne
 - [FDC Overview](https://dev.flare.network/fdc/overview) — Cross-chain and Web2 attestations
 - [FAssets Overview](https://dev.flare.network/fassets/overview) — Wrapped BTC, XRP, DOGE
 - [Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview) — XRPL account abstraction
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Flare Confidential Compute: TEEs, Protocol Managed Wallets, Flare Compute Extensions
 
 ## Flare Network
 

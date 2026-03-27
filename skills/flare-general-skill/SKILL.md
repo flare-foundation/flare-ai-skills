@@ -1,6 +1,6 @@
 ---
 name: flare-general
-description: Provides general domain knowledge about the Flare network—what it is, its core protocols (FTSO, FDC, FAssets, Smart Accounts), networks (Mainnet, Coston2, Songbird, Coston), RPC endpoints, block explorers, faucets, chain IDs, native tokens, consensus, and developer tooling. Use when answering general Flare questions, helping developers get started, or when no more specific Flare skill applies.
+description: Provides general domain knowledge about the Flare network—what it is, its core protocols (FTSO, FDC, FAssets, Smart Accounts, FCC/TEE), networks (Mainnet, Coston2, Songbird, Coston), RPC endpoints, block explorers, faucets, chain IDs, native tokens, consensus, and developer tooling. Use when answering general Flare questions, helping developers get started, or when no more specific Flare skill applies.
 ---
 
 ## Scope and Limitations
@@ -53,6 +53,7 @@ All transaction signing, key management, and on-chain execution must occur exclu
 | **FDC** (Flare Data Connector) | Validates external data (cross-chain transactions, Web2 APIs) via attestation consensus and Merkle proofs. |
 | **FAssets** | Trustless wrapped tokens (FXRP, FBTC, FDOGE) enabling XRP, BTC, and DOGE holders to use Flare DeFi. |
 | **Smart Accounts** | Account abstraction letting XRPL users interact with Flare without holding FLR. |
+| **FCC** (Flare Confidential Compute) | Extends Flare with Trusted Execution Environments (TEEs) for secure offchain computation, cross-chain transaction signing, and fast data attestation. |
 
 Validators on Flare serve a dual role: they participate in consensus **and** act as data providers for FTSO and FDC.
 
@@ -482,12 +483,50 @@ Introduced in FIP.02/STP.03 — a governance body of FTSO data providers that vo
 
 Reference: [dev.flare.network/network/governance](https://dev.flare.network/network/governance)
 
+## Flare Confidential Compute (FCC)
+
+**Flare Confidential Compute (FCC)** extends the Flare blockchain with **Trusted Execution Environments (TEEs)** to enable secure offchain computation, cross-chain transaction signing, and fast data attestation.
+
+**Status:** FCC is in final development stages and not yet publicly available.
+
+Reference: [dev.flare.network/fcc/overview](https://dev.flare.network/fcc/overview)
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Secure Offchain Computation** | TEE machines run verifiable code in hardware-isolated environments, protecting against untrusted operators |
+| **Cross-Chain Transaction Signing** | Protocol Managed Wallets allow smart contracts to programmatically assemble and sign transactions on external blockchains (XRPL, Bitcoin) |
+| **Fast Data Attestation** | A TEE-based Flare Data Connector rapidly attests external data; TEE signatures prove data provider consensus |
+| **Extensible Architecture** | Developers build custom Flare Compute Extensions (FCE) running arbitrary computations within TEE machines with onchain-verifiable results |
+| **Decentralized Consensus** | Instructions reach TEE machines only after achieving 50%+ signature weight from Flare's data providers |
+| **Private Key Management** | TEE machines securely generate, store, backup, and restore private keys for multi-signature wallet operations |
+
+### Architecture
+
+Three core components work together:
+
+| Component | Role |
+|-----------|------|
+| **Smart Contracts** | Govern logic and manage compute extensions, TEE registration, instruction issuance, and key administration |
+| **Data Providers and Cosigners** | Relay instructions, parse events, augment with external data, and sign before transmission to TEE machines |
+| **TEE Machines** | Verify consensus-weighted instructions, execute computations, and sign results with private keys |
+
+### System Applications
+
+**Protocol Managed Wallets (PMW):** Enable programmable transaction assembly and signing on external blockchains through Flare smart contracts, supporting multisig operations and nonce management.
+
+**Flare Data Connector (FDC) via TEE:** Achieves rapid attestation by having data providers respond to attestation requests, with TEE signatures verifying consensus.
+
+**Flare Compute Extensions (FCE):** Custom computation modules that developers can deploy to run arbitrary offchain logic within TEE machines, with results verifiable onchain.
+
 ## When to Use This Skill
 
 - Answering general questions about what Flare is and how it works.
 - Providing network configuration (chain IDs, RPC URLs, explorers, faucets).
 - Explaining the relationship between Flare's core protocols (FTSO, FDC, FAssets, Smart Accounts).
 - Helping developers set up their tooling (Hardhat, Foundry, viem/wagmi) for Flare.
+- Explaining Flare Confidential Compute (FCC/TEE) — what it is, how it works, Protocol Managed Wallets, Flare Compute Extensions.
 - Any question about Flare that doesn't fall squarely into FTSO, FDC, FAssets, or Smart Accounts territory.
 
 ## Additional Resources
@@ -502,6 +541,7 @@ Reference: [dev.flare.network/network/governance](https://dev.flare.network/netw
 - Python guide: [flare-for-python-guide.md](flare-for-python-guide.md)
 - Rust guide: [flare-for-rust-guide.md](flare-for-rust-guide.md)
 - Go guide: [flare-for-go-guide.md](flare-for-go-guide.md)
+- FCC overview: [dev.flare.network/fcc/overview](https://dev.flare.network/fcc/overview)
 - Flare Developer Hub: [dev.flare.network](https://dev.flare.network/)
 - Network Overview: [dev.flare.network/network/overview](https://dev.flare.network/network/overview)
 - FTSO skill: [flare-ftso](../flare-ftso-skill/SKILL.md)
