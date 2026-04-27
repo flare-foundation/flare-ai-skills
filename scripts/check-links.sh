@@ -23,6 +23,7 @@ IGNORE_LIST=(
   "https://{network}-explorer.flare.network/api"
   "https://coston2-explorer.flare.network/api"
   "https://dune.com/flare/flare-network-overview"
+  "https://intel.arkm.com/explorer/entity/flare-network"
 )
 
 # Sites that block automated requests (matched as substring)

@@ -160,6 +160,16 @@ AssetManager.reserveCollateral(agentVault, lots, maxFeeBIPS, executorAddress, { 
 - A dApp or wallet service handles proof submission on behalf of users
 - Automating the minting flow end-to-end for better UX
 
+## Alternative: Direct Minting (XRP Only)
+
+For XRP, a simpler **direct minting** flow is available that skips collateral reservation entirely. The minter sends a single payment to the Core Vault address on XRPL with parameters encoded in the destination tag or memo field. An executor then calls `executeDirectMinting` on Flare to finalize.
+
+Direct minting is subject to rate limits (hourly/daily caps, large-mint delays) and charges a percentage-based minting fee plus a flat executor fee.
+
+**Skill guide:** [direct-minting-guide.md](direct-minting-guide.md) — full walkthrough including destination tag vs memo encoding, `MintingTagManager`, executor restrictions, rate limiting, and operational parameters.
+
+**Official doc:** [FAssets Direct Minting](https://dev.flare.network/fassets/direct-minting)
+
 ## Post-Minting
 
 Successfully minted FAssets can be:

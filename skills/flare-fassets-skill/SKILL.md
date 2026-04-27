@@ -21,7 +21,7 @@ This skill is **documentation and reference only**. It describes FAssets protoco
 - Developers are solely responsible for validating and safely handling all external data in their own implementations
 
 **Financial operations — human-in-the-loop required:**
-- Contract functions described here (`reserveCollateral`, `executeMinting`, `redeem`, token `approve`) are documented for developer reference only
+- Contract functions described here (`reserveCollateral`, `executeMinting`, `redeem`, `redeemWithTag`, `executeDirectMinting`, `reserve` on MintingTagManager, token `approve`) are documented for developer reference only
 - All state-changing calls require explicit, per-action user confirmation in developer-controlled environments
 - Reference scripts (`reserve-collateral.ts`, `execute-minting.ts`, `redeem-fassets.ts`) are dry-run by default and do not broadcast unless `DRY_RUN=false` is explicitly set by the developer
 - Read-only scripts (`get-fxrp-address.ts`, `list-agents.ts`, `get-fassets-settings.ts`) require no signing key and cannot modify state
@@ -90,8 +90,19 @@ It is designed to be trustless and redeemable back to XRP.
 
 If minting fails, CRF is not returned.
 
+### Direct Minting (XRP Only)
+An alternative minting path that requires only a **single XRPL payment** to the Core Vault address. No collateral reservation step needed.
+
+Parameters (recipient, executor) are encoded via XRP destination tag (using `MintingTagManager`) or binary memo field. An executor calls `executeDirectMinting` on Flare to finalize.
+
+**Fees:** Percentage-based minting fee (with minimum floor) + flat executor fee, both deducted from the payment. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints.
+
+**Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
+
 ### Redemption
 Users redeem FAssets for the original underlying asset at any time (flow is request → agent pays out on underlying chain).
+
+**Redeem with Tag (XRP):** `redeemWithTag` lets redeemers specify an XRP destination tag, enabling redemption to exchange addresses that require one. Confirmed via `confirmXRPRedemptionPayment`; defaults via `xrpRedemptionPaymentDefault`. Gated by `redeemWithTagSupported` flag.
 
 ### Core Vault (CV)
 Per-asset vault that improves capital efficiency: agents can deposit underlying into the CV to free collateral.
@@ -131,7 +142,33 @@ Uses ethers; set `FLARE_RPC_URL` or pass your network RPC. **Security:** Review 
 
 ## Developer Integration (High Level)
 
-### Minting
+### Direct Minting (XRP Only)
+
+A single-transaction alternative to standard minting. No collateral reservation required.
+
+1. **Get Core Vault address:** Call `AssetManager.directMintingPaymentAddress()`.
+2. **Get fee parameters:**
+   - `getDirectMintingMinimumFeeUBA()` — minimum minting fee floor
+   - `getDirectMintingFeeBIPS()` — minting fee percentage
+   - `getDirectMintingExecutorFeeUBA()` — flat executor fee
+3. **Encode parameters** in the XRPL payment via destination tag (using `MintingTagManager`) or binary memo field.
+4. **Send payment** on XRPL to the Core Vault address.
+5. **Executor calls `executeDirectMinting`** on Flare after `othersCanExecuteAfterSeconds` if preferred executor is inactive.
+
+**Rate limits:** query `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`. Limits delay execution; watch for `DirectMintingDelayed` event.
+
+**MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
+- `reserve()` — payable; reserves a tag NFT, returns tag ID
+- `setMintingRecipient(tagId, recipient)` — owner only; sets FAsset recipient
+- `reservationFee()` — returns fee in native tokens
+- `reservedTagsForOwner(owner)` — returns all tag IDs for an address
+- `transfer(to, tagId)` — transfers tag; resets recipient and executor
+- `mintingRecipient(tagId)` — returns current recipient
+- `allowedExecutor(tagId)` — returns active executor (`address(0)` = anyone)
+
+**Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
+
+### Standard Minting
 
 1. **Reserve collateral:** Call `reserveCollateral(agentVault, lots, feeBIPS, executor)` on AssetManager.
 
@@ -221,12 +258,34 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 
 **Guide:** [Gasless FXRP Payments](https://dev.flare.network/fxrp/token-interactions/gasless-fxrp-payments)
 
+## IAssetManager — Key API Groups
+
+**Information:** `getSettings()`, `getAgentInfo(agentVault)`, `getCollateralTypes()`, `collateralReservationFee(lots)`, `fAsset()`
+
+**Direct Minting:** `directMintingPaymentAddress()`, `getDirectMintingMinimumFeeUBA()`, `getDirectMintingFeeBIPS()`, `getDirectMintingExecutorFeeUBA()`, `getDirectMintingOthersCanExecuteAfterSeconds()`, `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`, `getDirectMintingFeeReceiver()`, `getMintingTagManager()`
+
+**Redemption:** `redeem(lots, underlyingAddress, executor)`, `redeemAmount(amountUBA, underlyingAddress, executor)`, `redeemWithTag(lots, underlyingAddress, destinationTag, executor)`, `redemptionPaymentDefault(proof, requestId)`
+
+**Agents:** `getAllAgents()`, `getAvailableAgentsList(start, end)`, `getAvailableAgentsDetailedList(start, end)`
+
+**Redemption Queue:** `redemptionQueue(start, end)`, `agentRedemptionQueue(agentVault, start, end)`
+
+**Collateral & Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(proof, collateralReservationId)`
+
+**Core Vault:** `getCoreVaultManager()`, `getCoreVaultMinimumAmountLeftBIPS()`, `getCoreVaultTransferTimeExtensionSeconds()`, `getCoreVaultTransferFeeBIPS()`, `getCoreVaultMinimumRedeemLots()`, `getCoreVaultRedemptionFeeBIPS()`
+
+**Reference:** [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) | [IMintingTagManager](https://dev.flare.network/fassets/reference/IMintingTagManager)
+
 ## Terminology
 
 - **Underlying network / underlying asset:** Source chain and its native asset (e.g. XRPL, XRP).
 - **Lot:** Smallest minting unit; size from AssetManager/FTSO (see "Read FAssets Settings" in reference).
 - **Backing factor:** Minimum collateral ratio agents must maintain.
 - **CRF:** Collateral Reservation Fee. **UBA:** Smallest unit of the underlying asset (e.g. drops for XRP).
+- **Direct Minting:** Single-XRPL-payment minting path via Core Vault (XRP only). No collateral reservation required.
+- **MintingTagManager:** Contract managing ERC-721-like minting tag NFTs that map destination tags to recipient/executor parameters for direct minting. Access via `AssetManager.getMintingTagManager()`.
+- **Destination tag:** 32-bit integer field on XRPL transactions; used in direct minting to route payments to the correct FAsset recipient.
+- **`redeemWithTag`:** Redemption variant that specifies an XRP destination tag for the agent's payout (XRP only; for exchange addresses).
 
 ## Flare Smart Accounts
 
@@ -283,12 +342,15 @@ External XRPL memo data or RPC responses may contain arbitrary bytes or text-lik
 ## When to Use This Skill
 
 - Implementing or debugging FAssets minting/redemption (scripts, bots, dApps).
+- Implementing direct minting via Core Vault (destination tag or memo encoding, MintingTagManager, executor setup).
+- Implementing `redeemWithTag` for exchange addresses requiring XRP destination tags.
 - Resolving agent selection, collateral, fees, or payment-reference flows.
-- Integrating with AssetManager, AssetManagerController, or FAsset token contracts.
-- Explaining FAssets, FXRP, FBTC, agents, or Core Vault to users or in docs.
+- Integrating with AssetManager, AssetManagerController, IMintingTagManager, or FAsset token contracts.
+- Explaining FAssets, FXRP, FBTC, agents, Core Vault, or direct minting to users or in docs.
 - Following Flare Developer Hub FAssets guides and reference.
 
 ## Additional Resources
 
 - Official docs and API/reference: [reference.md](reference.md)
+- **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md) — direct minting via Core Vault, MintingTagManager, IMintingTagManager API
 - For detailed contract interfaces, mint/redeem scripts, and operational parameters, use the Flare Developer Hub links in reference.md.

@@ -7,7 +7,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [FAssets Overview](https://dev.flare.network/fassets/overview) — System summary, workflow, participants, Core Vault
 - [FXRP Overview](https://dev.flare.network/fxrp/overview) — FXRP architecture, mint/redeem paths, and usage options on Flare
 - [FAssets Minting](https://dev.flare.network/fassets/minting) — Minting flow, fees, payment deadlines, failure handling
-- [FAssets Redemption](https://dev.flare.network/fassets/redemption) — Redemption flow
+- [FAssets Direct Minting](https://dev.flare.network/fassets/direct-minting) — Single-transaction minting via Core Vault; destination tag and memo encoding, MintingTagManager, executor restrictions, rate limiting
+- [FAssets Redemption](https://dev.flare.network/fassets/redemption) — Redemption flow; includes `redeemWithTag` for exchange addresses requiring XRP destination tags
 - [FAssets Collateral](https://dev.flare.network/fassets/collateral) — Collateral types and rules
 - [FAssets Liquidation](https://dev.flare.network/fassets/liquidation) — Liquidators and challengers
 - [FAssets Core Vault](https://dev.flare.network/fassets/core-vault) — Core Vault behavior and governance
@@ -16,7 +17,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 ## Developer Guides
 
 - **Skill guide:** [minting-guide.md](minting-guide.md) — complete minting walkthrough (reserve collateral → XRP payment → FDC proof → execute minting) including executor-based minting
-- **Skill guide:** [redemption-guide.md](redemption-guide.md) — complete redemption walkthrough (approve → redeem → agent pays → default handling)
+- **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md) — direct minting via Core Vault: destination tag vs memo encoding, MintingTagManager NFT, executor restrictions, rate limiting, operational parameters, IMintingTagManager API
+- **Skill guide:** [redemption-guide.md](redemption-guide.md) — complete redemption walkthrough (approve → redeem → agent pays → default handling); includes `redeemWithTag` for exchange addresses
 - [Developer Guides Index](https://dev.flare.network/fassets/developer-guides)
 - [Get Asset Manager Address](https://dev.flare.network/fassets/developer-guides/fassets-asset-manager-address-contracts-registry) — From Flare Contract Registry
 - [Read FAssets Settings (Solidity)](https://dev.flare.network/fassets/developer-guides/fassets-settings-solidity) — Fetch lot size and asset decimals via a Solidity contract using `ContractRegistry.getAssetManagerFXRP()` → `getSettings()`; deploy and interact with Hardhat + `@flarenetwork/flare-periphery-contracts`
@@ -50,7 +52,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 ## Contract Reference
 
 - [FAssets Reference](https://dev.flare.network/fassets/reference) — Deployed contracts per network, core interfaces
-- [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager)
+- [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) — Full interface: information/settings, direct minting settings, redemption functions, agent enumeration, collateral, Core Vault settings
+- [IMintingTagManager](https://dev.flare.network/fassets/reference/IMintingTagManager) — NFT-based minting tag management: `reserve()`, `setMintingRecipient()`, `transfer()`, `allowedExecutor()`, `mintingRecipient()`; access via `AssetManager.getMintingTagManager()`
 - [IAssetManagerController](https://dev.flare.network/fassets/reference/IAssetManagerController)
 - [IAssetManagerEvents](https://dev.flare.network/fassets/reference/IAssetManagerEvents)
 - [ICollateralPool](https://dev.flare.network/fassets/reference/ICollateralPool)

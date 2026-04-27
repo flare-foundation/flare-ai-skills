@@ -112,6 +112,28 @@ FAssets uses a redemption queue (redemption ticket system) to track pending rede
 
 ## Alternative Redemption Methods
 
+### Redeem with Tag (XRP, Exchange Addresses)
+
+`redeemWithTag` enables redeemers to specify an **XRP destination tag** on redemption payments. This is essential for redeeming directly to exchange addresses that require destination tags.
+
+**Requirements:**
+- XRP only — gated by the `redeemWithTagSupported` flag on AssetManager settings.
+- Destination tag must fit in a 32-bit integer.
+- Like `redeemAmount`, this method supports redeeming any amount (not limited to whole lots).
+
+**Contract call:**
+```
+AssetManager.redeemWithTag(lots, redeemerUnderlyingAddressString, destinationTag, executorAddress)
+```
+
+**Payment confirmation:**
+Use `confirmXRPRedemptionPayment` (a dedicated FDC proof type that supports destination tags) to confirm the agent's payment.
+
+**Default handling:**
+If the agent fails to pay, invoke `xrpRedemptionPaymentDefault` to trigger the standard default process (collateral + premium to redeemer).
+
+**Guide:** [FAssets Redemption — Redeem with Tag](https://dev.flare.network/fassets/redemption#redeem-with-tag)
+
 ### Swap and Redeem
 
 Swap another token (e.g. WC2FLR) for FXRP on a DEX and redeem in a single transaction using the `SwapAndRedeem` contract pattern.
