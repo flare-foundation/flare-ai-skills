@@ -93,7 +93,7 @@ If minting fails, CRF is not returned.
 ### Direct Minting (XRP Only)
 An alternative minting path that requires only a **single XRPL payment** to the Core Vault address. No collateral reservation step needed.
 
-Parameters (recipient, executor) are encoded via XRP destination tag (using `MintingTagManager`) or binary memo field. An executor calls `executeDirectMinting` on Flare to finalize.
+Parameters (recipient, executor) are encoded via XRP destination tag (using `MintingTagManager`) or binary memo field. For the 32-byte memo form, encode `[8-byte DIRECT_MINTING prefix][4-byte zero padding][20-byte recipient]`. An executor calls `executeDirectMinting` on Flare to finalize.
 
 **Fees:** Percentage-based minting fee (with minimum floor) + flat executor fee, both deducted from the payment. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints.
 

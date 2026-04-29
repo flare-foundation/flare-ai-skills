@@ -64,9 +64,10 @@ Two binary formats are supported in the XRPL transaction memo field:
 
 **32-byte format (recipient only — anyone can execute):**
 ```
-[8 bytes prefix: 0x4642505266410018] [20 bytes recipient address]
+[8 bytes prefix: 0x4642505266410018] [4 bytes zero padding: 0x00000000] [20 bytes recipient address]
 ```
 - Prefix `0x4642505266410018` signals `DIRECT_MINTING`.
+- The 4-byte zero-padding segment is required in this format.
 - Anyone can call `executeDirectMinting` after `othersCanExecuteAfterSeconds`.
 
 **48-byte format (recipient + executor):**
