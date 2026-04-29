@@ -84,6 +84,7 @@ Full directory: [dev.flare.network/network/developer-tools](https://dev.flare.ne
 - [Arkham Intel](https://intel.arkm.com/explorer/entity/flare-network) — Onchain wallet analytics
 - [Flare Metrics](https://flaremetrics.io/defi) — DeFi opportunity tracker
 - [Catenalytica](https://catenalytica.com) — FTSO performance and network monitoring
+- [FlareBase](https://flare-base.io/flare) — Web and REST APIs for Flare data
 
 ### Explorers
 - [Flare Explorer](https://flare-explorer.flare.network) — Blockscout explorer for Flare Mainnet
