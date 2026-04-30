@@ -99,10 +99,16 @@ Parameters (recipient, executor) are encoded via XRP destination tag (using `Min
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
+**Developer guides (TypeScript/viem, `flare-viem-starter`):**
+- [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — memo-based path (32-byte memo with `0x4642505266410018` prefix + recipient)
+- [Direct Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — destination-tag path (reserve via `MintingTagManager`, bind recipient, reuse for subsequent payments)
+
 ### Redemption
 Users redeem FAssets for the original underlying asset at any time (flow is request → agent pays out on underlying chain).
 
-**Redeem with Tag (XRP):** `redeemWithTag` lets redeemers specify an XRP destination tag, enabling redemption to exchange addresses that require one. Confirmed via `confirmXRPRedemptionPayment`; defaults via `xrpRedemptionPaymentDefault`. Gated by `redeemWithTagSupported` flag.
+**Redeem by Amount:** `redeemAmount(amountUBA, ...)` redeems an arbitrary amount in UBA (not whole lots). Validate against `minimumRedeemAmountUBA()`; partial fulfillment emits `RedemptionAmountIncomplete`. Developer guide (TypeScript/viem): [Redeem FXRP by Amount](https://dev.flare.network/fassets/developer-guides/fassets-redeem-amount).
+
+**Redeem with Tag (XRP):** `redeemWithTag` lets redeemers specify an XRP destination tag, enabling redemption to exchange addresses that require one. Confirmed via `confirmXRPRedemptionPayment`; defaults via `xrpRedemptionPaymentDefault`. Gated by `redeemWithTagSupported` flag. Developer guide (TypeScript/viem): [Redeem FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-redeem-with-tag).
 
 ### Core Vault (CV)
 Per-asset vault that improves capital efficiency: agents can deposit underlying into the CV to free collateral.
@@ -264,7 +270,7 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 
 **Direct Minting:** `directMintingPaymentAddress()`, `getDirectMintingMinimumFeeUBA()`, `getDirectMintingFeeBIPS()`, `getDirectMintingExecutorFeeUBA()`, `getDirectMintingOthersCanExecuteAfterSeconds()`, `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`, `getDirectMintingFeeReceiver()`, `getMintingTagManager()`
 
-**Redemption:** `redeem(lots, underlyingAddress, executor)`, `redeemAmount(amountUBA, underlyingAddress, executor)`, `redeemWithTag(lots, underlyingAddress, destinationTag, executor)`, `redemptionPaymentDefault(proof, requestId)`
+**Redemption:** `redeem(lots, underlyingAddress, executor)`, `redeemAmount(amountUBA, underlyingAddress, executor)`, `redeemWithTag(amountUBA, underlyingAddress, executor, destinationTag)`, `redemptionPaymentDefault(proof, requestId)`
 
 **Agents:** `getAllAgents()`, `getAvailableAgentsList(start, end)`, `getAvailableAgentsDetailedList(start, end)`
 

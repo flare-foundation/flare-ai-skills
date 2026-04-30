@@ -112,6 +112,27 @@ FAssets uses a redemption queue (redemption ticket system) to track pending rede
 
 ## Alternative Redemption Methods
 
+### Redeem by Amount (Arbitrary Amounts, Not Whole Lots)
+
+`redeemAmount` lets redeemers specify an arbitrary amount in UBA rather than redeeming whole lots. This is useful when the redeemer's FXRP balance is not an exact multiple of the lot size.
+
+**Contract call:**
+```
+AssetManager.redeemAmount(amountUBA, redeemerUnderlyingAddressString, executorAddress)
+```
+
+**Validation:**
+- Amount must be at least `minimumRedeemAmountUBA()` (read from the AssetManager).
+- Simulate the call before submitting to validate parameters.
+
+**Events:**
+- `RedemptionRequested` — one per agent fulfilling the request (multiple agents may fulfill a single request).
+- `RedemptionAmountIncomplete` — emitted when ticket demand is high and only part of the requested amount could be allocated.
+
+**Developer guide (TypeScript/viem):** [Redeem FXRP by Amount](https://dev.flare.network/fassets/developer-guides/fassets-redeem-amount) — end-to-end example from `flare-viem-starter`: resolve `AssetManagerFXRP` via the contract registry, validate against `minimumRedeemAmountUBA()`, simulate, submit, parse `RedemptionRequested` from receipt logs. Dependencies: `viem`, `@flarenetwork/flare-wagmi-periphery-package`.
+
+**Skill script (ethers):** [scripts/redeem-fassets-amount.ts](scripts/redeem-fassets-amount.ts) — validates against `minimumRedeemAmountUBA`, approves FXRP, calls `redeemAmount(amountUBA, underlyingAddress, executor)`. Dry-run by default.
+
 ### Redeem with Tag (XRP, Exchange Addresses)
 
 `redeemWithTag` enables redeemers to specify an **XRP destination tag** on redemption payments. This is essential for redeeming directly to exchange addresses that require destination tags.
@@ -123,8 +144,10 @@ FAssets uses a redemption queue (redemption ticket system) to track pending rede
 
 **Contract call:**
 ```
-AssetManager.redeemWithTag(lots, redeemerUnderlyingAddressString, destinationTag, executorAddress)
+AssetManager.redeemWithTag(amountUBA, redeemerUnderlyingAddressString, executorAddress, destinationTag)
 ```
+
+Note: the amount is in UBA (not whole lots), and the destination tag is the **last** argument.
 
 **Payment confirmation:**
 Use `confirmXRPRedemptionPayment` (a dedicated FDC proof type that supports destination tags) to confirm the agent's payment.
@@ -132,7 +155,14 @@ Use `confirmXRPRedemptionPayment` (a dedicated FDC proof type that supports dest
 **Default handling:**
 If the agent fails to pay, invoke `xrpRedemptionPaymentDefault` to trigger the standard default process (collateral + premium to redeemer).
 
-**Guide:** [FAssets Redemption — Redeem with Tag](https://dev.flare.network/fassets/redemption#redeem-with-tag)
+**Events:**
+- `RedemptionWithTagRequested` — emitted when the redemption request is accepted; carries the destination tag the agent must include in the XRPL payment.
+- `RedemptionAmountIncomplete` — emitted when the requested amount cannot be fully allocated.
+
+**Guides:**
+- Concept: [FAssets Redemption — Redeem with Tag](https://dev.flare.network/fassets/redemption#redeem-with-tag)
+- Developer guide (TypeScript/viem): [Redeem FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-redeem-with-tag) — end-to-end example from `flare-viem-starter`: resolve `AssetManagerFXRP`, validate against `minimumRedeemAmountUBA()`, simulate, submit, decode `RedemptionWithTagRequested`. Dependencies: `viem`, `@flarenetwork/flare-wagmi-periphery-package`.
+- **Skill script (ethers):** [scripts/redeem-fassets-with-tag.ts](scripts/redeem-fassets-with-tag.ts) — validates against `minimumRedeemAmountUBA`, approves FXRP, calls `redeemWithTag(amountUBA, underlyingAddress, executor, destinationTag)`. Dry-run by default.
 
 ### Swap and Redeem
 
