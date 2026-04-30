@@ -2,7 +2,10 @@
 
 Direct minting enables users to create FAssets (currently FXRP) through a **single transaction on the underlying blockchain**, bypassing the standard multi-step collateral reservation process. Payments go to the **Core Vault address** rather than individual agents.
 
-**Source:** [FAssets Direct Minting](https://dev.flare.network/fassets/direct-minting)
+**Sources:**
+- [FAssets Direct Minting (concept)](https://dev.flare.network/fassets/direct-minting)
+- [Direct Mint FXRP (developer guide — memo)](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — TypeScript/viem walkthrough using a 32-byte memo
+- [Direct Mint FXRP with Tag (developer guide — destination tag)](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — TypeScript/viem walkthrough using `MintingTagManager`
 
 ## How It Differs from Standard Minting
 
@@ -58,6 +61,10 @@ AssetManager.getDirectMintingFeeReceiver()      // address receiving minting fee
 AssetManager.getMintingTagManager()
 ```
 
+**Developer guide (TypeScript/viem):** [Direct Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — end-to-end example from `flare-viem-starter`: reserve tag, bind recipient, send XRP payment with the destination tag, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`.
+
+**Skill script (ethers + xrpl):** [scripts/direct-mint-fxrp-tag.ts](scripts/direct-mint-fxrp-tag.ts) — reserves a tag (or reuses one via `EXISTING_TAG_ID`), binds recipient, then submits the XRPL Payment with `DestinationTag`. Dry-run by default.
+
 ### Method 2: Memo Field
 
 Two binary formats are supported in the XRPL transaction memo field:
@@ -76,6 +83,10 @@ Two binary formats are supported in the XRPL transaction memo field:
 ```
 - Prefix `0x4642505266410021` signals `DIRECT_MINTING_EX`.
 - Set executor address to `address(0)` (zero address) to allow anyone to execute.
+
+**Developer guide (TypeScript/viem):** [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — end-to-end example from `flare-viem-starter`: build the 32-byte memo (prefix `0x4642505266410018` + 4 zero bytes + recipient address, lowercased without `0x`), send XRPL payment to the Core Vault, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`. Helpers: `getDirectMintingPaymentAddress()`, `computeDirectMintingPaymentAmountXrp()` (covers minting + executor fees), `waitForDirectMintingExecuted()`.
+
+**Skill script (ethers + xrpl):** [scripts/direct-mint-fxrp.ts](scripts/direct-mint-fxrp.ts) — reads Core Vault address and fee parameters, builds the 32-byte memo, and submits the XRPL Payment. Dry-run by default.
 
 ## Executor Restrictions
 
