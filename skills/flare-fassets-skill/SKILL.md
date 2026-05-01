@@ -171,6 +171,7 @@ A single-transaction alternative to standard minting. No collateral reservation 
 - `transfer(to, tagId)` — transfers tag; resets recipient and executor
 - `mintingRecipient(tagId)` — returns current recipient
 - `allowedExecutor(tagId)` — returns active executor (`address(0)` = anyone)
+- `setAllowedExecutor(tagId, executor)` — owner only; restricts execution to `executor` (10-min cooldown; cleared on `transfer`)
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
@@ -266,19 +267,21 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 
 ## IAssetManager — Key API Groups
 
-**Information:** `getSettings()`, `getAgentInfo(agentVault)`, `getCollateralTypes()`, `collateralReservationFee(lots)`, `fAsset()`
+**Information:** `getSettings()`, `getAgentInfo(agentVault)`, `getCollateralTypes()`, `collateralReservationFee(lots)`, `collateralReservationInfo(collateralReservationId)`, `fAsset()`
 
-**Direct Minting:** `directMintingPaymentAddress()`, `getDirectMintingMinimumFeeUBA()`, `getDirectMintingFeeBIPS()`, `getDirectMintingExecutorFeeUBA()`, `getDirectMintingOthersCanExecuteAfterSeconds()`, `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`, `getDirectMintingFeeReceiver()`, `getMintingTagManager()`
+**Direct Minting Settings:** `directMintingPaymentAddress()`, `getDirectMintingMinimumFeeUBA()`, `getDirectMintingFeeBIPS()`, `getDirectMintingExecutorFeeUBA()`, `getDirectMintingOthersCanExecuteAfterSeconds()`, `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`, `getDirectMintingFeeReceiver()`
+
+**Redeem With Tag Settings:** `minimumRedeemAmountUBA()`, `getMintingTagManager()`
 
 **Redemption:** `redeem(lots, underlyingAddress, executor)`, `redeemAmount(amountUBA, underlyingAddress, executor)`, `redeemWithTag(amountUBA, underlyingAddress, executor, destinationTag)`, `redemptionPaymentDefault(proof, requestId)`
 
-**Agents:** `getAllAgents()`, `getAvailableAgentsList(start, end)`, `getAvailableAgentsDetailedList(start, end)`
+**Agents:** `getAllAgents(start, end)`, `getAvailableAgentsList(start, end)`, `getAvailableAgentsDetailedList(start, end)`
 
-**Redemption Queue:** `redemptionQueue(start, end)`, `agentRedemptionQueue(agentVault, start, end)`
+**Redemption Queue:** `redemptionQueue(firstRedemptionTicketId, pageSize)`, `agentRedemptionQueue(agentVault, firstRedemptionTicketId, pageSize)`
 
-**Collateral & Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(proof, collateralReservationId)`
+**Collateral Reservation & Minting Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(IPayment.Proof proof, collateralReservationId)`, `executeDirectMinting(IXRPPayment.Proof proof)`
 
-**Core Vault:** `getCoreVaultManager()`, `getCoreVaultMinimumAmountLeftBIPS()`, `getCoreVaultTransferTimeExtensionSeconds()`, `getCoreVaultTransferFeeBIPS()`, `getCoreVaultMinimumRedeemLots()`, `getCoreVaultRedemptionFeeBIPS()`
+**Core Vault:** `getCoreVaultManager()`, `getCoreVaultDonationTag()`, `getCoreVaultMinimumAmountLeftBIPS()`, `getCoreVaultTransferTimeExtensionSeconds()`, `getCoreVaultTransferFeeBIPS()`, `getCoreVaultMinimumRedeemLots()`, `getCoreVaultRedemptionFeeBIPS()`
 
 **Reference:** [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) | [IMintingTagManager](https://dev.flare.network/fassets/reference/IMintingTagManager)
 
