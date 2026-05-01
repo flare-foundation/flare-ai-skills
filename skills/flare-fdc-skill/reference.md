@@ -17,6 +17,8 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 - [ConfirmedBlockHeightExists](https://dev.flare.network/fdc/attestation-types/confirmed-block-height-exists)
 - [BalanceDecreasingTransaction](https://dev.flare.network/fdc/attestation-types/balance-decreasing-transaction)
 - [ReferencedPaymentNonexistence](https://dev.flare.network/fdc/attestation-types/referenced-payment-nonexistence)
+- [XRPPayment](https://dev.flare.network/fdc/attestation-types/xrp-payment) — XRPL-native Payment with r-address, MemoData, DestinationTag
+- [XRPPaymentNonexistence](https://dev.flare.network/fdc/attestation-types/xrp-payment-nonexistence) — Prove no matching XRPL Payment in a ledger range
 
 ## FDC Guides (Hardhat)
 
@@ -44,9 +46,11 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 ## Contract Reference (FDC)
 
 - [IFdcHub](https://dev.flare.network/fdc/reference/IFdcHub) — `requestAttestation(bytes)`, fee configs
-- [IFdcVerification](https://dev.flare.network/fdc/reference/IFdcVerification) — `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`, etc.
+- [IFdcVerification](https://dev.flare.network/fdc/reference/IFdcVerification) — `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`, `verifyXRPPayment`, `verifyXRPPaymentNonexistence`, etc.
 - [IEVMTransaction](https://dev.flare.network/fdc/reference/IEVMTransaction) — Proof/Response/RequestBody/ResponseBody/Event
 - [IAddressValidity](https://dev.flare.network/fdc/reference/IAddressValidity)
+- [IXRPPayment](https://dev.flare.network/fdc/reference/IXRPPayment) — Proof/RequestBody/ResponseBody for native XRPL Payment (attestation type `0x08`)
+- [IXRPPaymentNonexistence](https://dev.flare.network/fdc/reference/IXRPPaymentNonexistence) — Proof/RequestBody/ResponseBody for XRPL Payment non-existence (attestation type `0x09`)
 - [Data Availability API](https://dev.flare.network/fdc/reference/data-availability-api) — DA Layer endpoints
 
 ## Relay (Round Finalization)
@@ -71,6 +75,7 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 
 - **Mainnet:** `ETH`, `FLR`, `SGB`
 - **Testnet:** `testETH` (Sepolia), `testFLR` (Coston2), `testSGB` (Coston)
+- **XRPL (XRPPayment / XRPPaymentNonexistence):** `XRP` (mainnet), `testXRP` (testnet)
 - Web2Json: `PublicWeb2` (Coston/Coston2)
 
 ## URL Parsing Security
