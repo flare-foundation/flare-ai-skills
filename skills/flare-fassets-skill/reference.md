@@ -68,11 +68,6 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [ICoreVaultManager](https://dev.flare.network/fassets/reference/ICoreVaultManager)
 - [IAgentOwnerRegistry](https://dev.flare.network/fassets/reference/IAgentOwnerRegistry)
 
-## Bots
-
-- [Agent Bot CLI](https://dev.flare.network/fassets/reference/agent-bot)
-- [User Bot CLI](https://dev.flare.network/fassets/reference/user-bot)
-
 ## Smart Accounts
 
 - [Flare Smart Accounts](https://dev.flare.network/smart-accounts/overview) — Account abstraction for XRPL users to interact with FAssets on Flare without owning FLR
