@@ -173,6 +173,9 @@ View. Returns the current minting recipient for a tag.
 **`allowedExecutor(uint256 _mintingTag)` → address**
 View. Returns the active allowed executor for a tag (`address(0)` if unset).
 
+**`setAllowedExecutor(uint256 _mintingTag, address _executor)`**
+Tag owner only. Designates `_executor` as the sole address permitted to execute direct mintings with this tag (must not be `address(0)`). Subject to a 10-minute cooldown before the new executor becomes active. If never set, any address may execute. Cleared on `transfer`.
+
 ## Security Considerations
 
 - Always verify the Core Vault address via `AssetManager.directMintingPaymentAddress()` — do not hardcode.
