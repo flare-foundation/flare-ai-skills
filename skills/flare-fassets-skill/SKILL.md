@@ -161,7 +161,13 @@ A single-transaction alternative to standard minting. No collateral reservation 
 4. **Send payment** on XRPL to the Core Vault address.
 5. **Executor calls `executeDirectMinting`** on Flare after `othersCanExecuteAfterSeconds` if preferred executor is inactive.
 
-**Rate limits:** query `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()`, `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()`. Limits delay execution; watch for `DirectMintingDelayed` event.
+**Rate limits (tumbling windows):** Direct minting uses clock-aligned tumbling windows (hourly: 3600s aligned to UTC, daily: 86400s aligned to 00:00 UTC). Mints over the cap are delayed, not rejected. Query:
+- `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()` — caps
+- `getDirectMintingHourlyLimiterState()`, `getDirectMintingDailyLimiterState()` — raw window state (advance off-chain for live values)
+- `getDirectMintingsUnblockUntilTimestamp()` — if future, limiter is temporarily disabled by governance
+- `assetMintingGranularityUBA()` — granularity to convert AMG units to UBA
+- `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — large-mint independent delay
+Watch for `DirectMintingDelayed` event. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits)
 
 **MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
 - `reserve()` — payable; reserves a tag NFT, returns tag ID
@@ -172,6 +178,7 @@ A single-transaction alternative to standard minting. No collateral reservation 
 - `mintingRecipient(tagId)` — returns current recipient
 - `allowedExecutor(tagId)` — returns active executor (`address(0)` = anyone)
 - `setAllowedExecutor(tagId, executor)` — owner only; restricts execution to `executor` (10-min cooldown; cleared on `transfer`)
+- `transferFrom(from, to, tagId)` — ERC-721 transfer; resets recipient to new owner, clears allowed executor, tag ID unchanged. Use to rotate custody or hand a tag to another account. Developer guide: [Transfer a Minting Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag-transfer)
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
@@ -279,7 +286,7 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 
 **Redemption Queue:** `redemptionQueue(firstRedemptionTicketId, pageSize)`, `agentRedemptionQueue(agentVault, firstRedemptionTicketId, pageSize)`
 
-**Collateral Reservation & Minting Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(IPayment.Proof proof, collateralReservationId)`, `executeDirectMinting(IXRPPayment.Proof proof)`
+**Collateral Reservation & Minting Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(IPayment.Proof proof, collateralReservationId)`, `executeDirectMinting(IXRPPayment.Proof proof)`, `executeDirectMintingWithData(IXRPPayment.Proof proof, bytes data)` (for smart-account custom instructions; `data` = ABI-encoded `PackedUserOperation`; only valid for smart-account targets)
 
 **Core Vault:** `getCoreVaultManager()`, `getCoreVaultDonationTag()`, `getCoreVaultMinimumAmountLeftBIPS()`, `getCoreVaultTransferTimeExtensionSeconds()`, `getCoreVaultTransferFeeBIPS()`, `getCoreVaultMinimumRedeemLots()`, `getCoreVaultRedemptionFeeBIPS()`
 
@@ -351,7 +358,9 @@ External XRPL memo data or RPC responses may contain arbitrary bytes or text-lik
 ## When to Use This Skill
 
 - Implementing or debugging FAssets minting/redemption (scripts, bots, dApps).
-- Implementing direct minting via Core Vault (destination tag or memo encoding, MintingTagManager, executor setup).
+- Implementing direct minting via Core Vault (destination tag or memo encoding, MintingTagManager, executor setup, rate limits).
+- Transferring minting tag NFTs between addresses (`IMintingTagManager.transferFrom`).
+- Checking or preflight-testing direct minting rate limits (hourly/daily caps, large-mint threshold).
 - Implementing `redeemWithTag` for exchange addresses requiring XRP destination tags.
 - Resolving agent selection, collateral, fees, or payment-reference flows.
 - Integrating with AssetManager, AssetManagerController, IMintingTagManager, or FAsset token contracts.

@@ -40,6 +40,7 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 - [Web2Json](https://dev.flare.network/fdc/guides/foundry/web2-json)
 - [Proof of Reserves](https://dev.flare.network/fdc/guides/foundry/proof-of-reserves)
 - [Weather Insurance](https://dev.flare.network/fdc/guides/foundry/weather-insurance)
+- [Web2Json for Custom API (Foundry)](https://dev.flare.network/fdc/guides/foundry/web2-json-for-custom-api)
 - [Cross-Chain Payment](https://dev.flare.network/fdc/guides/foundry/cross-chain-payment)
 - [Cross-Chain FDC](https://dev.flare.network/fdc/guides/foundry/cross-chain-fdc)
 

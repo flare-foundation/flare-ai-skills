@@ -31,15 +31,23 @@ Each XRPL address receives a unique smart account on Flare that only that addres
 
 ## How It Works
 
-The workflow consists of three steps:
+Flare Smart Accounts support two complementary flows:
 
-1. **XRPL Instruction:** User sends a Payment transaction on XRPL to a designated operator address, encoding instructions in the memo field as a 32-byte payment reference.
+### Proof-based flow (payment reference)
 
-2. **Proof Generation:** The operator monitors incoming XRPL transactions and requests a Payment attestation from the FDC.
-
-3. **On-Chain Execution:** The operator calls `executeTransaction` on the `MasterAccountController` contract on Flare, passing the proof.
+1. **XRPL Instruction:** User sends a `Payment` to the operator's XRPL address, encoding a 32-byte instruction as the payment reference in the memo field.
+2. **Proof Generation:** The operator requests a `Payment` attestation from the FDC.
+3. **On-Chain Execution:** The operator calls `executeInstruction` (or `reserveCollateral`) on `MasterAccountController`, passing the FDC proof.
 
 The contract verifies the proof, retrieves (or creates) the user's smart account, decodes the payment reference, and executes the requested action.
+
+### Direct-minting (memo) flow
+
+1. User sends a `Payment` to an FAssets agent's XRPL address that mints FXRP directly to the smart account, with the memo field carrying the instruction.
+2. The FAssets `AssetManager` mints FXRP to `MasterAccountController` and calls back into `handleMintedFAssets`.
+3. `MasterAccountController` routes FAssets to the user's `PersonalAccount` and dispatches any memo instruction (see [Memo Opcodes](#memo-opcodes-direct-minting-flow)).
+
+> **Important:** XRPL transactions targeting smart accounts must **not** use a destination tag. A destination tag forces FAssets direct minting to credit the tag-holder instead of the smart account.
 
 ## Payment Reference Structure (32 Bytes)
 
@@ -202,110 +210,123 @@ Complete withdrawal after waiting period expires.
 | 15-16 | vaultId | Upshift vault identifier (2 bytes) |
 | 17-32 | — | Arbitrary (ignored) |
 
-### Custom Instructions (Type `0xff`)
+### Memo Opcodes (Direct-Minting Flow)
 
-Execute arbitrary contract calls on Flare.
+When minting FXRP directly to a smart account via the FAssets direct minting path, the XRPL memo carries one of these opcodes in its first byte:
 
-| Bytes | Field | Description |
-|-------|-------|-------------|
-| 1 | `0xff` | Custom instruction marker |
-| 2 | walletId | Wallet identifier |
-| 3-32 | callHash | 30-byte truncated keccak256 hash of encoded CustomCall array |
+| Memo opcode | Action | Description |
+|-------------|--------|-------------|
+| `0xFE` | Custom Instruction | 42-byte memo committing `keccak256(PackedUserOperation)`; bytes delivered off-chain by executor |
+| `0xFF` | Memo Field Custom Instruction | Full `abi.encode(PackedUserOperation)` carried inline in memo (capped at ~1024 bytes) |
+| `0xE0` | Skip memo | Mark target XRPL transaction's memo to be skipped on its next direct mint |
+| `0xE1` | Fast-forward nonce | Advance personal account's memo-instruction nonce |
+| `0xE2` | Replace executor fee | Set replacement executor fee for a stuck XRPL transaction |
+| `0xD0` | Pin executor | Pin a specific executor address to the personal account |
+| `0xD1` | Unpin executor | Unpin the executor from the personal account |
 
 ## Custom Instructions — Deep Dive
 
-### CustomCall Struct
+Custom instructions let an XRPL user execute arbitrary contract calls on Flare through an XRPL `Payment`. The personal account exposes an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) style `executeUserOp` entry point.
+
+### Call Struct
 
 ```solidity
-struct CustomCall {
-    address targetContract;  // Contract address to call
-    uint256 value;          // FLR to send with the call
-    bytes data;             // Encoded function calldata
+struct Call {
+    address target;   // Contract address to call
+    uint256 value;    // FLR to send with the call
+    bytes data;       // Encoded function calldata
 }
+
+function executeUserOp(Call[] calldata _calls) external payable;
 ```
 
-### Call Hash Generation
+### PackedUserOperation
 
-The call hash is computed as:
+Custom instructions are packaged as an EIP-4337 `PackedUserOperation`. Only three fields are required:
 
-```solidity
-bytes32(uint256(keccak256(abi.encode(_customInstruction))) & ((1 << 240) - 1))
-```
+- `sender` — must equal the personal account address (`getPersonalAccount(xrplAddress)`)
+- `nonce` — must equal the current memo nonce (`getNonce(personalAccount)`)
+- `callData` — `abi.encodeCall(IPersonalAccount.executeUserOp, (calls))`
 
-This process:
-1. ABI encodes the `CustomCall[]` array
-2. Applies `keccak256` hash
-3. Masks to 30 bytes (removes first 2 bytes)
+### Two Variants
 
-The `MasterAccountController` provides `encodeCustomInstruction()` helper function.
+**Custom Instruction (`0xFE`) — recommended:**
 
+42-byte memo layout:
 
-### Registration Workflow
+| Bytes | Field | Description |
+|-------|-------|-------------|
+| `0` | `0xFE` | Instruction ID |
+| `1` | walletId | Wallet identifier |
+| `2-9` | executorFeeUBA | Executor fee (big-endian uint64) |
+| `10-41` | userOpHash | `keccak256(abi.encode(userOp))` |
 
-1. **Encode calldata** using `abi.encodeWithSignature()` or Viem's `encodeFunctionData()`
-2. **Register instruction** by calling `registerCustomInstruction(CustomCall[])` on MasterAccountController
-3. **Get call hash** using `encodeCustomInstruction(CustomCall[])`
-4. **Build payment reference:** `0xff` + walletId (1 byte) + callHash (30 bytes)
-5. **Send XRPL Payment** with the payment reference in the memo field
+The user delivers the full `PackedUserOperation` bytes to an executor off-chain. The executor calls `executeDirectMintingWithData(proof, data)` on AssetManager with `msg.value = sum(call.value)`. The controller verifies `keccak256(_data) == userOpHash` before executing. This keeps the XRPL memo constant at 42 bytes regardless of batch size.
 
+**Memo Field Custom Instruction (`0xFF`) — simpler, single-actor:**
 
-### TypeScript Example
+Memo layout (10-byte header + full payload):
+
+| Bytes | Field | Description |
+|-------|-------|-------------|
+| `0` | `0xFF` | Instruction ID |
+| `1` | walletId | Wallet identifier |
+| `2-9` | executorFeeUBA | Executor fee (big-endian uint64) |
+| `10+` | userOpData | `abi.encode(PackedUserOperation)` |
+
+The full `PackedUserOperation` is inline in the memo. Any indexer can relay via `executeDirectMinting(proof)`. Subject to the XRPL 1024-byte memo cap.
+
+### TypeScript Example (Custom Instruction `0xFE`)
 
 ```typescript
-import { encodeFunctionData, toHex } from "viem";
+import { encodeFunctionData } from "viem";
 
-type CustomInstruction = {
-  targetContract: Address;
-  value: bigint;
-  data: `0x${string}`;
-};
-
-// Build custom instructions
-const customInstructions: CustomInstruction[] = [
+const calls = [
   {
-    targetContract: checkpointAddress,
-    value: BigInt(0),
+    target: counterAddress,
+    value: 0n,
     data: encodeFunctionData({
-      abi: checkpointAbi,
-      functionName: "passCheckpoint",
-      args: [],
-    }),
-  },
-  {
-    targetContract: piggyBankAddress,
-    value: BigInt(depositAmount),
-    data: encodeFunctionData({
-      abi: piggyBankAbi,
-      functionName: "deposit",
+      abi: counterAbi,
+      functionName: "increment",
       args: [],
     }),
   },
 ];
 
-// Register with MasterAccountController
-const { request } = await publicClient.simulateContract({
-  account: account,
-  address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-  abi: masterAccountControllerAbi,
-  functionName: "registerCustomInstruction",
-  args: [customInstructions],
-});
-await walletClient.writeContract(request);
-
-// Get encoded instruction for XRPL payment
-const encodedInstruction = await publicClient.readContract({
-  address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-  abi: masterAccountControllerAbi,
-  functionName: "encodeCustomInstruction",
-  args: [customInstructions],
+const callData = encodeFunctionData({
+  abi: personalAccountAbi,
+  functionName: "executeUserOp",
+  args: [calls],
 });
 
-// Build final payment reference
-const walletId = 0;
-const paymentReference = ("0xff" +
-  toHex(walletId, { size: 1 }).slice(2) +
-  encodedInstruction.slice(6)) as `0x${string}`;
+const nonce = await publicClient.readContract({
+  address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+  abi: masterAccountControllerAbi,
+  functionName: "getNonce",
+  args: [personalAccountAddress],
+});
+
+const userOp = {
+  sender: personalAccountAddress,
+  nonce,
+  callData,
+  // remaining fields empty — not validated on-chain
+  initCode: "0x",
+  callGasLimit: 0n,
+  verificationGasLimit: 0n,
+  preVerificationGas: 0n,
+  gasFees: "0x",
+  paymasterAndData: "0x",
+  signature: "0x",
+};
+
+// Deliver userOp bytes to executor off-chain, build 42-byte memo with keccak256 hash
 ```
+
+**Use `0xFE` when:** batch is large, call payload should stay private on XRPL, or you operate an executor.
+**Use `0xFF` when:** call batch fits in ~1024 bytes and you don't want to coordinate with an executor.
+
+See [Custom Instruction Comparison](https://dev.flare.network/smart-accounts/custom-instruction-comparison) for a detailed trade-off guide.
 
 ## CLI Tool — Complete Reference
 
@@ -484,16 +505,18 @@ Chain commands for complete workflows:
 
 The `MasterAccountController` is the central contract for smart accounts.
 
-
 | Function | Purpose |
 |----------|---------|
-| `getPersonalAccount(xrplAddress)` | Get user's smart account address on Flare |
+| `getPersonalAccount(xrplAddress)` | Get user's smart account address on Flare (deterministic; works before deployment) |
 | `getXrplProviderWallets()` | Get operator XRPL addresses for payments |
 | `getVaults()` | List registered vault addresses and types |
 | `getAgentVaults()` | List FAssets agent vaults |
-| `registerCustomInstruction(calls)` | Register custom instruction for later execution |
-| `encodeCustomInstruction(calls)` | Get encoded hash for custom instruction |
-| `executeTransaction(proof, xrplAddress)` | Execute instruction with FDC proof |
+| `getNonce(personalAccount)` | Get current memo-instruction nonce; `PackedUserOperation.nonce` must match this |
+| `getExecutor(personalAccount)` | Get pinned executor for personal account (`address(0)` = no pin) |
+| `executeInstruction(proof, xrplAddress)` | Execute a proof-based instruction |
+| `reserveCollateral(xrplAddress, paymentRef, txId)` | Reserve collateral (no FDC proof needed at this stage) |
+| `executeDepositAfterMinting(reservationId, proof, xrplAddress)` | Second leg of collateral-reservation-and-deposit after minting |
+| `handleMintedFAssets(...)` | Called by AssetManager when FXRP is direct-minted into a personal account |
 
 ## TypeScript Integration (Viem)
 

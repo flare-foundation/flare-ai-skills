@@ -4,9 +4,11 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ## Overview and Concepts
 
-- [Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview) — System summary, workflow, account abstraction for XRPL users
+- [Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview) — System summary, proof-based and direct-minting flows, memo opcodes, account abstraction for XRPL users
 - [FAsset Instructions](https://dev.flare.network/smart-accounts/fasset-instructions) — Instruction types, byte formats, encoding for FXRP/Firelight/Upshift
-- [Custom Instructions](https://dev.flare.network/smart-accounts/custom-instruction) — Arbitrary contract calls, registration, call hash generation
+- [Custom Instruction](https://dev.flare.network/smart-accounts/custom-instruction) — Hash-based arbitrary contract calls via EIP-4337 `PackedUserOperation` (opcode `0xFE`, recommended)
+- [Memo Field Custom Instruction](https://dev.flare.network/smart-accounts/memo-field-custom-instruction) — Inline `PackedUserOperation` in XRPL memo (opcode `0xFF`, single-actor)
+- [Custom Instruction Comparison](https://dev.flare.network/smart-accounts/custom-instruction-comparison) — When to use `0xFE` vs `0xFF`
 
 ## Developer Guides — CLI
 
@@ -17,7 +19,11 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 ## Developer Guides — TypeScript + Viem
 
 - [State Lookup](https://dev.flare.network/smart-accounts/guides/typescript-viem/state-lookup-ts) — Reading smart account state from Flare chain
-- [Custom Instruction](https://dev.flare.network/smart-accounts/guides/typescript-viem/custom-instruction-ts) — Sending custom instructions using Viem
+- [Custom Instruction](https://dev.flare.network/smart-accounts/guides/typescript-viem/custom-instruction-ts) — Hash-based custom instruction (`0xFE`) using Viem
+- [Memo Field Custom Instruction](https://dev.flare.network/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts) — Inline custom instruction (`0xFF`) using Viem
+- [Cross-Chain Mint](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) — Mint FXRP from XRP and bridge to Sepolia via LayerZero in a single flow
+- [Cross-Chain Redeem](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts) — Redeem FXRP back to XRP with cross-chain flows
+- [Cross-Chain Redeem to Tag](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts) — Redeem FXRP with a destination tag for exchange addresses
 
 ## CLI Repository
 
@@ -39,8 +45,9 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ## Contract Interfaces
 
-- [MasterAccountController](https://dev.flare.network/smart-accounts/overview) — Central contract for smart account management
-- [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) — FAssets asset manager interface
+- [IMasterAccountController](https://dev.flare.network/smart-accounts/reference/IMasterAccountController) — Central contract: `getPersonalAccount`, `getNonce`, `getExecutor`, `executeInstruction`, `reserveCollateral`, `handleMintedFAssets`, `UserOperationExecuted` event
+- [IPersonalAccount](https://dev.flare.network/smart-accounts/reference/IPersonalAccount) — `executeUserOp(Call[])`, `Call` struct, `CallFailed` error
+- [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) — FAssets asset manager interface; includes `executeDirectMinting` and `executeDirectMintingWithData`
 
 ## External Resources
 
