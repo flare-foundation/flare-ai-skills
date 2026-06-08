@@ -250,6 +250,7 @@ Reference: [dev.flare.network/network/fsp](https://dev.flare.network/network/fsp
 |------|-------------|
 | **QuickNode** | High-performance APIs for queries, transactions, and cross-chain operations |
 | **Ankr** | Infrastructure and developer tools for blockchain application deployment |
+| **NOWNodes** | Blockchain node provider with RPC access for Flare |
 | **ChainList** | Directory of all public RPCs supporting Flare (chain ID 14) |
 
 ### OFTs (Omnichain Fungible Tokens)
