@@ -29,6 +29,7 @@ Same `SKILL.md` format works across tools.
 | **[flare-fassets](skills/flare-fassets-skill/SKILL.md)** | FAssets—wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration |
 | **[flare-fdc](skills/flare-fdc-skill/SKILL.md)** | Flare Data Connector—attestation types (EVMTransaction, Web2Json, Payment, etc.), request flow, Merkle proofs, verifier/DA Layer, contract verification |
 | **[flare-smart-accounts](skills/flare-smart-accounts-skill/SKILL.md)** | Smart Accounts—account abstraction for XRPL users to interact with Flare without owning FLR |
+| **[flare-fce](skills/flare-fce-skill/SKILL.md)** | Flare Confidential Compute (FCC)—TEE extensions, TeeExtensionRegistry/TeeMachineRegistry, the InstructionSender pattern, OPType/OPCommand routing, the instruction lifecycle, types server, attestation, and reproducible builds |
 
 ## What's in the skills
 
@@ -63,7 +64,15 @@ Same `SKILL.md` format works across tools.
 - **CLI tool:** Python CLI for encoding and sending XRPL transactions
 - **TypeScript integration:** Viem-based examples for state lookup and custom instructions
 
-The agent uses these skills when you work with FTSO price feeds, FAssets, FXRP, minting/redemption, FDC attestations, Smart Accounts, or Flare DeFi.
+### flare-fce
+- **FCC overview:** Confidential extensions running inside a Trusted Execution Environment (GCP Confidential Space / AMD SEV), wired to Flare contracts
+- **On-chain building blocks:** `TeeExtensionRegistry`, `TeeMachineRegistry`, and the InstructionSender contract pattern (the only address allowed to submit instructions)
+- **Routing model:** `OPType`/`OPCommand` `bytes32` pairs matched across Solidity, Go config, and the Go router
+- **Extension code:** the `POST /action` handler 4-step pattern, the TEE signing port, and the types server (`/decode`)
+- **Attestation & builds:** code-hash whitelisting, `MODE=0` vs simulated, reproducible builds via `SOURCE_DATE_EPOCH`, and the Coston/Coston2 deploy lifecycle
+- **Reference repos:** `fce-extension-scaffold` (Hello World) and `fce-sign` (signing example)
+
+The agent uses these skills when you work with FTSO price feeds, FAssets, FXRP, minting/redemption, FDC attestations, Smart Accounts, Confidential Compute / TEE extensions, or Flare DeFi.
 
 ## How to Use These Skills
 
@@ -80,6 +89,7 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fce
 ```
 
 See [skills.sh](https://skills.sh/flare-foundation/flare-ai-skills) for details. Ensure [Cursor has skills enabled](https://docs.cursor.com/context/rules-for-ai#skills).
@@ -98,7 +108,7 @@ Example for project-only install:
 mkdir -p .cursor/skills
 cp -r /path/to/flare-ai-skills/skills/flare-ftso-skill .cursor/skills/
 cp -r /path/to/flare-ai-skills/skills/flare-fassets-skill .cursor/skills/
-# repeat for flare-fdc-skill, flare-smart-accounts-skill
+# repeat for flare-fdc-skill, flare-smart-accounts-skill, flare-fce-skill
 ```
 
 4. In Cursor, confirm skills are enabled (Settings → Cursor Settings → Rules for AI / Skills). You can then ask the agent to use a skill by name (e.g. “Use the flare-ftso skill and show how to read FTSO feeds”).
@@ -122,6 +132,7 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 
 # Install Smart Accounts skill
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fce
 ```
 
 For more information, visit the [skills.sh platform page](https://skills.sh/flare-foundation/flare-ai-skills).
@@ -155,6 +166,7 @@ To install skills for your personal use in Claude Code:
    /plugin install flare-fassets@flare-ai-skills
    /plugin install flare-fdc@flare-ai-skills
    /plugin install flare-smart-accounts@flare-ai-skills
+   /plugin install flare-fce@flare-ai-skills
    ```
 3. Manage plugins: Run `/plugin` to open the interactive plugin manager
 
@@ -169,7 +181,8 @@ To automatically provide these skills to everyone working in a repository, confi
     "flare-ftso@flare-ai-skills": true,
     "flare-fassets@flare-ai-skills": true,
     "flare-fdc@flare-ai-skills": true,
-    "flare-smart-accounts@flare-ai-skills": true
+    "flare-smart-accounts@flare-ai-skills": true,
+    "flare-fce@flare-ai-skills": true
   },
   "extraKnownMarketplaces": {
     "flare-ai-skills": {
@@ -201,7 +214,9 @@ flare-ai-skills/
     │   └── SKILL.md
     ├── flare-fdc-skill/
     │   └── SKILL.md
-    └── flare-smart-accounts-skill/
+    ├── flare-smart-accounts-skill/
+    │   └── SKILL.md
+    └── flare-fce-skill/
         └── SKILL.md
 ```
 
@@ -223,6 +238,7 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fassets
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fdc
 npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-smart-accounts
+npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare-fce
 ```
 
 ### Option C: Manual install
@@ -234,6 +250,7 @@ npx skills add https://github.com/flare-foundation/flare-ai-skills --skill flare
    - **`skills/flare-fassets-skill/`** for FAssets
    - **`skills/flare-fdc-skill/`** for FDC
    - **`skills/flare-smart-accounts-skill/`** for Smart Accounts
+   - **`skills/flare-fce-skill/`** for Flare Confidential Compute / TEE extensions
 3. Use your AI tool as usual and ask it to use the appropriate skill.
 
 **Where to Save Skills**
@@ -275,9 +292,12 @@ flare-ai-skills/
  ├── flare-fdc-skill/             # FDC skill
  │   ├── SKILL.md                 # Main skill instructions
  │   └── reference.md             # Flare Developer Hub links
- └── flare-smart-accounts-skill/  # Smart Accounts skill
+ ├── flare-smart-accounts-skill/  # Smart Accounts skill
+ │   ├── SKILL.md                 # Main skill instructions
+ │   └── reference.md             # Flare Developer Hub links
+ └── flare-fce-skill/             # Flare Confidential Compute (FCC) / TEE skill
      ├── SKILL.md                 # Main skill instructions
-     └── reference.md             # Flare Developer Hub links
+     └── reference.md             # Reference repos + platform links
 ```
 
 Each skill folder (with `SKILL.md` and `reference.md`) can be installed independently into the tool's skills path.
