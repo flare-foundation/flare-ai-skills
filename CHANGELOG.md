@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **flare-fce-skill**: Flare Confidential Compute (FCC) / TEE extension domain knowledge — confidential extensions in a Trusted Execution Environment, the TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, OPType/OPCommand routing, the instruction lifecycle, the extension action handler, the types server, attestation and code-hash whitelisting, reproducible builds, and the Coston/Coston2 deploy lifecycle (sourced from `fce-extension-scaffold` and `fce-sign`)
+
 ## [v1.0.0](https://gitlab.com/flarenetwork/support-software/flare-ai-skills) - 2026-02-12
 
 ### Added
