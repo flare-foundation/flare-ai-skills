@@ -1,5 +1,5 @@
 ---
-name: flare-fce
+name: flare-fcc
 description: Provides domain knowledge and guidance for Flare Confidential Compute (FCC) and TEE extensions—how confidential extensions run inside a Trusted Execution Environment, the on-chain TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, the OPType/OPCommand routing model, the instruction lifecycle, the extension action handler, the types server, attestation, and reproducible builds. Use when building, deploying, or reasoning about Flare confidential extensions, TEE machines, FCC, confidential compute, the fce-extension-scaffold, the fce-sign signing example, Confidential Space VMs, code-hash attestation, or registering a TEE on Coston/Coston2.
 ---
 
@@ -132,6 +132,162 @@ Extensions that need to sign, attest, or encrypt with TEE-managed keys call the 
 ### Types server
 
 A lightweight HTTP sidecar (`POST /decode`, `GET /registry`, `GET /health`, default port `8100`) that turns raw hex instruction data into human-readable JSON for frontends and debugging. You register a decoder per `(OPType, OPCommand, Kind)` in `pkg/types/register.go` using `NewJSONDecoder` or `NewABIDecoder` (the ABI decoder takes the ABI argument); `Kind` is `message` (request) or `result` (response). `Lookup` matches `(OPType, OPCommand, Kind)` exactly, then falls back to `(OPType, "", Kind)`.
+
+## fce-sign: Private Key Extension Example
+
+The `fce-sign` repo demonstrates the full TEE workflow: store an ECIES-encrypted private key, sign arbitrary messages. Available in Go, Python, and TypeScript (set `LANGUAGE` in `.env`).
+
+### Docker Service Architecture
+
+Three containers run as Docker services:
+
+- **`extension-tee`** — your extension code. Receives decoded instructions from the proxy and returns results.
+- **`ext-proxy`** — watches the chain for new instructions, forwards them to your handler, submits results back on-chain.
+- **`redis`** — in-memory store used by the proxy.
+
+### Port Reference (fce-sign)
+
+| Service            | Container port | Host port |
+|--------------------|----------------|-----------|
+| ext-proxy internal | 6663           | 6673      |
+| ext-proxy external | 6664           | 6674      |
+| redis              | 6379           | 6382      |
+
+ngrok exposes host port **6674** (ext-proxy external) to the internet. The internal port 6673 is used for communication between the extension container and the proxy within Docker.
+
+### Deploying fce-sign on Coston2 (Local Simulated TEE)
+
+Prerequisites: Docker Desktop, Foundry, Go, ngrok, a funded Coston2 wallet.
+
+**Step 0 — Activate local simulated mode:**
+```bash
+./scripts/use-chain.sh local coston2 go   # or python / typescript
+```
+Sets `SIMULATED_TEE=true` and `LOCAL_MODE=false` (real Coston2 chain, simulated attestation). Run `./scripts/use-chain.sh --list` to see all options.
+
+**Step 1 — Configure deployer keys** in `.env.local.coston2`:
+```bash
+DEPLOYMENT_PRIVATE_KEY="<funded-coston2-private-key-hex-no-0x>"
+INITIAL_OWNER="0x<your-address>"
+```
+Re-run `use-chain.sh` after editing so `.env` picks up changes.
+
+**Step 2 — Deploy contract and register extension:**
+```bash
+./scripts/pre-build.sh
+```
+Compiles Solidity, deploys `InstructionSender`, registers the extension on-chain. Writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extension.env`.
+
+> **Warning:** once `config/extension.env` exists, pre-build refuses to run again. Use `--force` only when intentionally creating a new extension — it deploys a new `InstructionSender` and registers a new extension ID, which will cause `MachineManager.TooMany()` if an older TEE machine is still registered under the previous extension ID.
+
+**Step 3 — Start the ngrok tunnel** (separate terminal):
+```bash
+ngrok http 6674
+```
+Copy the HTTPS URL and set `EXT_PROXY_URL` in `.env.local.coston2`, then re-run `use-chain.sh`.
+
+**Step 4 — Configure the indexer DB:**
+```bash
+cp config/proxy/extension_proxy.coston2.docker.toml.example \
+   config/proxy/extension_proxy.coston2.docker.toml
+```
+Edit the `[db]` block with the Coston2 indexer credentials (host `34.38.42.208`, port `3306`, database `indexer`). Credentials are provided on request via [support](https://flare.network/resources/technical-support) or [@flare_network](https://x.com/flare_network).
+
+**Step 5 — Start the extension stack:**
+```bash
+./scripts/start-services.sh
+```
+Wait for the proxy: `until curl -sf http://localhost:6674/info >/dev/null 2>&1; do sleep 2; done`
+
+**Step 6 — Verify the proxy:**
+```bash
+curl -s "$EXT_PROXY_URL/info" | jq '.machineData'
+```
+Simulated TEE: `codeHash` = `0x194844cf…`, `extensionId` matches `config/extension.env`, `initialOwner` matches your address.
+
+**Step 7 — Register the TEE machine:**
+```bash
+./scripts/post-build.sh
+```
+Runs `allow-tee-version` (whitelists code hash) and `register-tee -command rRap` (registers the machine, issues fresh attestation, runs FTDC check, promotes to production).
+
+**Step 8 — Run end-to-end test:**
+```bash
+./scripts/test.sh
+```
+Sequence: `setExtensionId()` → fetch TEE public key → ECIES-encrypt a test private key → `updateKey` on-chain → wait for processing → `sign` on-chain → verify ECDSA signature matches.
+
+### Python and TypeScript Handler Framework
+
+Python and TypeScript use a `Framework` class that registers handlers by `(opType, opCommand)` pair:
+
+```python
+def register(framework: Framework) -> None:
+    framework.handle(OP_TYPE_KEY, OP_COMMAND_UPDATE, handle_key_update)
+    framework.handle(OP_TYPE_KEY, OP_COMMAND_SIGN, handle_key_sign)
+```
+
+Each handler receives a hex-encoded `originalMessage` and returns `(data, status, error)`:
+- **`data`:** hex-encoded return data written back on-chain, or `None`
+- **`status`:** `0` = error, `1` = success, `>=2` = pending
+- **`error`:** error message string if the handler failed
+
+The `base/` package (Python/TypeScript) provides `hex_to_bytes`/`bytes_to_hex` and the `Framework` HTTP server. **Do not modify `base/`** — it is framework infrastructure.
+
+### fce-sign Project Structure
+
+```
+sign/
+├── contracts/                   # Solidity contracts (shared)
+├── config/
+│   ├── extension.env            # Generated by pre-build.sh
+│   ├── coston2/deployed-addresses.json
+│   └── proxy/                   # ext-proxy TOML configs
+├── scripts/                     # use-chain.sh, pre-build.sh, start-services.sh, post-build.sh, test.sh
+├── go/internal/extension/       # Go business logic (modify)
+├── go/tools/cmd/                # Deploy CLIs (Go-only, shared across all languages)
+├── python/app/                  # Python business logic (modify)
+├── python/base/                 # Framework infrastructure (do not modify)
+├── typescript/src/app/          # TypeScript business logic (modify)
+├── typescript/src/base/         # Framework infrastructure (do not modify)
+├── docker-compose.yaml
+├── .env.example
+└── .env.local.coston2
+```
+
+### Building Your Own Extension from fce-sign
+
+1. Clone the repo and pick a language.
+2. Define `opType`/`opCommand` constants in both the Solidity contract and your handler.
+3. Modify `contracts/InstructionSender.sol` with your constants and parameters.
+4. Write handlers in `go/internal/extension/` (Go) or `app/` (Python/TypeScript).
+5. Follow the deployment steps above — `go/tools/` deploy CLIs are shared regardless of language.
+
+### Cleanup
+
+**Stop the stack:**
+```bash
+./scripts/stop-services.sh
+```
+
+**Full reset** (start from scratch):
+```bash
+./scripts/stop-services.sh
+docker compose down --rmi local
+rm -f .env config/extension.env config/proxy/extension_proxy.coston2.docker.toml
+```
+
+Then restart from Step 0. Note: on-chain state (deployed contracts, registered extensions, TEEs) cannot be reset — each `pre-build.sh` deploys new contracts.
+
+### fce-sign Troubleshooting
+
+- **Proxy won't start / DB sync error** — check `docker compose logs ext-proxy`; verify DB credentials in `config/proxy/extension_proxy.coston2.docker.toml`.
+- **Transaction reverts** — insufficient C2FLR; use the [Coston2 faucet](https://faucet.flare.network/coston2).
+- **`MachineManager.TooMany()`** — `config/extension.env` extension ID doesn't match the on-chain TEE record (usually after `pre-build.sh --force`). Do a full reset or keep the existing `extension.env` and re-run only `post-build.sh` + `test.sh`.
+- **`Verification.ChallengeExpired`** — re-run `post-build.sh`.
+- **`code hashes do not match`** — `SIMULATED_TEE` and container `MODE` disagree; use `SIMULATED_TEE=true` with `MODE=1` (injected by Docker Compose).
+- **TEE registration times out** — try `docker compose restart ext-proxy`; FDC attestation requires active relay providers on Coston2.
+- **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart Docker stack, re-run `post-build.sh` and `test.sh`.
 
 ## Attestation and Reproducible Builds
 

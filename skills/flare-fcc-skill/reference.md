@@ -17,6 +17,7 @@ Use these links for source repositories, contract surfaces, and the platform the
 
 - [flare-foundation/fce-sign](https://github.com/flare-foundation/fce-sign) — Example TEE extension that stores a private key and signs messages with it. Ships in Go, Python, and TypeScript (select with `LANGUAGE`). **Demo only**: it stores an encrypted secret on-chain, which is not safe for production.
 - [fce-sign REPRODUCIBILITY.md](https://github.com/flare-foundation/fce-sign/blob/main/REPRODUCIBILITY.md) — `SOURCE_DATE_EPOCH`, reproducible image builds, and the cross-machine code-hash caveats for Python/TS
+- [Flare Developer Hub — Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with ngrok, end-to-end test, troubleshooting, and cleanup
 
 ## Contract Interfaces
 
@@ -35,7 +36,7 @@ These ship as minimal local interfaces in the scaffold and are slated to move in
 ## TEE Platform (GCP Confidential Space / AMD SEV)
 
 - [Google Cloud Confidential Space overview](https://cloud.google.com/confidential-computing/confidential-space/docs/confidential-space-overview) — The platform Flare TEEs run on
-- [Remote attestation in Confidential Space](https://cloud.google.com/confidential-computing/confidential-space/docs/reference-attestation-tokens) — How the attestation tokens / measurements that back the on-chain code hash work
+- [Remote attestation in Confidential Space](https://docs.cloud.google.com/confidential-computing/docs) — How the attestation tokens / measurements that back the on-chain code hash work
 - [AMD SEV](https://www.amd.com/en/developer/sev.html) — The memory-encryption technology behind the `GCP_AMD_SEV` platform value reported by the proxy `/info` endpoint
 
 ## Networks (deploy targets)

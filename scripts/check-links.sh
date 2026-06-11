@@ -23,6 +23,7 @@ IGNORE_LIST=(
   "https://{network}-explorer.flare.network/api"
   "https://coston2-explorer.flare.network/api"
   "https://dune.com/flare/flare-network-overview"
+  "http://localhost:6674/info"
   "https://intel.arkm.com/explorer/entity/flare-network"
 )
 

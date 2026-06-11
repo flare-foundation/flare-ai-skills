@@ -10,9 +10,9 @@ and this project adheres to
 
 ### Added
 
-- **flare-fce-skill**: Flare Confidential Compute (FCC) / TEE extension domain knowledge — confidential extensions in a Trusted Execution Environment, the TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, OPType/OPCommand routing, the instruction lifecycle, the extension action handler, the types server, attestation and code-hash whitelisting, reproducible builds, and the Coston/Coston2 deploy lifecycle (sourced from `fce-extension-scaffold` and `fce-sign`)
+- **flare-fcc-skill**: Flare Confidential Compute (FCC) / TEE extension domain knowledge — confidential extensions in a Trusted Execution Environment, the TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, OPType/OPCommand routing, the instruction lifecycle, the extension action handler, the types server, attestation and code-hash whitelisting, reproducible builds, and the Coston/Coston2 deploy lifecycle (sourced from `fce-extension-scaffold` and `fce-sign`)
 
-## [v1.0.0](https://gitlab.com/flarenetwork/support-software/flare-ai-skills) - 2026-02-12
+## [v1.0.0](https://github.com/flare-foundation/flare-ai-skills) - 2026-02-12
 
 ### Added
 
