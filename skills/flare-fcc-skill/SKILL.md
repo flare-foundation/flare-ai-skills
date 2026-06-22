@@ -1,6 +1,6 @@
 ---
 name: flare-fcc
-description: Provides domain knowledge and guidance for Flare Confidential Compute (FCC) and TEE extensions—how confidential extensions run inside a Trusted Execution Environment, the on-chain TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, the OPType/OPCommand routing model, the instruction lifecycle, the extension action handler, the types server, attestation, and reproducible builds. Use when building, deploying, or reasoning about Flare confidential extensions, TEE machines, FCC, confidential compute, the fce-extension-scaffold, the fce-sign signing example, Confidential Space VMs, code-hash attestation, or registering a TEE on Coston/Coston2.
+description: Provides domain knowledge and guidance for Flare Confidential Compute (FCC) and TEE extensions—how confidential extensions run inside a Trusted Execution Environment, the on-chain TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, the OPType/OPCommand routing model, the instruction lifecycle, the extension action handler, the types server, attestation, and reproducible builds. Use when building, deploying, or reasoning about Flare confidential extensions, TEE machines, FCC, confidential compute, the fce-extension-scaffold, the fce-sign signing example, the fce-weather-insurance example, Confidential Space VMs, code-hash attestation, parametric insurance on TEE, or registering a TEE on Coston/Coston2.
 ---
 
 ## Scope and Limitations
@@ -29,9 +29,10 @@ All transaction signing, key management, attestation, and on-chain execution hap
 
 Use FCC when an application needs **confidential state, secret-holding, or off-chain compute whose integrity is provable on-chain** — e.g. a key manager that signs on behalf of users, sealed-bid auctions, private order matching, or any "the chain triggers it but the computation must stay private and attested" workload.
 
-**Two reference repos:**
+**Reference repos:**
 - **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension (Go) with contracts, deploy/registration tooling, a types server, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). This is the starting point for building your own extension.
 - **`flare-foundation/fce-sign`** — an example extension that stores a private key and signs messages with it, shipped in Go, Python, and TypeScript. Demonstrates the TEE signing port and reproducible builds. Explicitly demo-only for the on-chain-secret part.
+- **`flare-foundation/fce-weather-insurance`** — a full FCC application demonstrating parametric rainfall insurance. Policyholders buy cover on-chain; the TEE fetches OpenWeatherMap data and signs settlement results; anyone calls `settle()` to verify and pay out. Supports public and ECIES-encrypted private policies. Includes a Next.js dApp frontend.
 
 ## The Instruction Lifecycle
 
@@ -319,4 +320,4 @@ The scaffold scripts chain four phases (`./scripts/full-setup.sh --test` runs al
 - Reading **FTSO** price feeds, **FDC** attestations, **FAssets** minting/redemption, or **Smart Accounts** — use those dedicated skills.
 - General network facts (chain IDs, RPCs, faucets, explorers) — use `flare-general`.
 
-Use **this** skill when the task involves confidential/TEE execution: building or deploying an extension, the InstructionSender/registry pattern, attestation and code-hash whitelisting, the types server, or the `fce-extension-scaffold` / `fce-sign` repos.
+Use **this** skill when the task involves confidential/TEE execution: building or deploying an extension, the InstructionSender/registry pattern, attestation and code-hash whitelisting, the types server, parametric insurance on TEE, or the `fce-extension-scaffold` / `fce-sign` / `fce-weather-insurance` repos. See also [dev.flare.network/fcc](https://dev.flare.network/fcc/overview) for the official Flare Developer Hub FCC documentation.

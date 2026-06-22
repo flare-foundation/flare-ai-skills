@@ -50,13 +50,13 @@ The **Flare Time Series Oracle (FTSO)** is an enshrined oracle that delivers dec
 
 FTSO has four core components:
 
-1. **Verifiably Random Selection** — Each block triggers selection of data providers via a stake-weighted Verifiable Randomness Function (VRF). Expected sample size is 1.5 per block. Providers have no control over when they are selected.
+1. **Verifiably Random Selection** — Each block triggers selection of data providers via a stake-weighted Verifiable Randomness Function (VRF). Expected sample size is `1` by default per block. Providers have no control over when they are selected.
 
 2. **Incremental Delta Updates** — Selected providers submit a fixed delta (+1, 0, or −1) applied to the previous feed value. Base increment: `1/2^13 ≈ 0.0122%`. Formula: `P(t+1) = (1 + p)^δ(t) × P(t)`.
 
 3. **Volatility Incentive Mechanism** — During high volatility, anyone can pay a fee to temporarily increase the expected sample size, enabling faster price convergence. Only the expected (not actual) sample size increases.
 
-4. **Anchoring to Scaling** — Scaling feeds use a full commit-reveal process across all providers every **90 seconds** and serve as accuracy anchors. Providers are rewarded when block-latency feeds stay within ±0.25% of anchor feeds.
+4. **Anchoring to Scaling** — Scaling feeds use a full commit-reveal process across all providers every **90 seconds** and serve as accuracy anchors. Providers are rewarded when block-latency feeds stay within the primary reward band (the interquartile range band) of the anchor feed selected to determine rewards for that voting epoch.
 
 ## Feed Types
 
@@ -268,7 +268,7 @@ Scaling provides commit-reveal anchored prices every **90 seconds** (one voting 
 1. **Commit** — Providers submit commit hashes (concealing feed values).
 2. **Reveal** — Providers reveal values and random numbers.
 3. **Sign** — Valid reveals produce a **weighted median**; results aggregated into a Merkle tree and published onchain.
-4. **Finalization** — A randomly chosen provider (or fallback) submits the signed Merkle root onchain.
+4. **Finalization** — A randomly selected set of providers (or any other entity in case of failure) can collect and submit the signed Merkle root onchain.
 
 **Weighted median:** Sort all provider submissions by value, accumulate stake-weighted totals, and select the value where cumulative weight exceeds 50% of total weight.
 

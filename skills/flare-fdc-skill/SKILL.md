@@ -31,11 +31,12 @@ All transaction signing, key management, and on-chain execution must occur exclu
 
 ## What FDC Is
 
-The **Flare Data Connector (FDC)** is an enshrined oracle that validates external data for Flare's EVM state. Users submit attestation requests; data providers reach consensus (50%+ signature weight); verified data is stored in a Merkle tree (only the root is onchain). Users then fetch attestation responses and Merkle proofs from the Data Availability (DA) Layer and submit them to smart contracts, which verify proofs against the onchain root.
+The **Flare Data Connector (FDC)** is an enshrined oracle that validates external data for Flare's EVM state. Users submit attestation requests; data providers reach consensus (a BitVector supported by more than 50% of total provider weight); verified data is stored in a Merkle tree (only the root is onchain). Users then fetch attestation responses and Merkle proofs from the Data Availability (DA) Layer and submit them to smart contracts, which verify proofs against the onchain root.
 
 **Key points:**
+- **Data age limits** — A proof can only be constructed for sufficiently recent states. The maximum allowed data age is set per attestation type and source: most chain-data types (EVMTransaction, Payment, etc.) allow up to **14 days**; `AddressValidity` and `Web2Json` place no practical limit. Once a proof is constructed it remains available indefinitely.
 - **Prepare request** — Verifier API (e.g. `POST .../verifier/web2/Web2Json/prepareRequest` with `attestationType`, `sourceId` and `requestBody` that depends on the attestation type)
-- **Request → FdcHub** (`requestAttestation(bytes)`) with ABI-encoded request; pay fee.
+- **Request → FdcHub** (`requestAttestation(bytes)`) with ABI-encoded request; pay fee. The fee must be at least the configured minimum for the attestation type and source (otherwise rejected). Larger fees increase the chance the request is confirmed in its round. Confirmed request fees are awarded to data providers; unconfirmed request fees are burnt.
 - **Round finalization** — typically 90–180 seconds; wait before using a proof.
 - **Proof retrieval** — DA Layer API (e.g. `POST .../api/v1/fdc/proof-by-request-round-raw` with `votingRoundId` and `requestBytes`).
 - **Contract verification** — use `IFdcVerification` (from `ContractRegistry.getFdcVerification()`) and the type-specific method (e.g. `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`).

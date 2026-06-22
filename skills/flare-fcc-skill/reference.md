@@ -1,6 +1,12 @@
 # Flare Confidential Compute (FCC) / TEE Extensions — Reference
 
-Use these links for source repositories, contract surfaces, and the platform the TEEs run on. At time of writing the Flare Developer Hub does not yet have a dedicated FCC section, so the reference repos below are the authoritative source.
+Use these links for official docs, source repositories, contract surfaces, and the platform the TEEs run on.
+
+## Flare Developer Hub (FCC)
+
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC
+- [Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with ngrok, end-to-end test, troubleshooting, and cleanup
+- [Weather Insurance Extension Guide](https://dev.flare.network/fcc/guides/weather-insurance-extension) — Full FCC application: parametric rainfall insurance, ECIES-encrypted private policies, settlement via OpenWeatherMap data, Next.js frontend
 
 ## Reference Repositories
 
@@ -17,7 +23,10 @@ Use these links for source repositories, contract surfaces, and the platform the
 
 - [flare-foundation/fce-sign](https://github.com/flare-foundation/fce-sign) — Example TEE extension that stores a private key and signs messages with it. Ships in Go, Python, and TypeScript (select with `LANGUAGE`). **Demo only**: it stores an encrypted secret on-chain, which is not safe for production.
 - [fce-sign REPRODUCIBILITY.md](https://github.com/flare-foundation/fce-sign/blob/main/REPRODUCIBILITY.md) — `SOURCE_DATE_EPOCH`, reproducible image builds, and the cross-machine code-hash caveats for Python/TS
-- [Flare Developer Hub — Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with ngrok, end-to-end test, troubleshooting, and cleanup
+
+## Weather Insurance Extension
+
+- [flare-foundation/fce-weather-insurance](https://github.com/flare-foundation/fce-weather-insurance) — Full FCC application: parametric rainfall insurance using OpenWeatherMap data inside a TEE. Includes Go handler, `WeatherInsurance.sol`, ECIES-encrypted private policies, and a Next.js frontend.
 
 ## Contract Interfaces
 
