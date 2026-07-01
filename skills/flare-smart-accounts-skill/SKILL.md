@@ -218,9 +218,9 @@ When minting FXRP directly to a smart account via the FAssets direct minting pat
 |-------------|--------|-------------|
 | `0xFE` | Custom Instruction | 42-byte memo committing `keccak256(PackedUserOperation)`; bytes delivered off-chain by executor |
 | `0xFF` | Memo Field Custom Instruction | Full `abi.encode(PackedUserOperation)` carried inline in memo (capped at ~1024 bytes) |
-| `0xE0` | Skip memo | Mark target XRPL transaction's memo to be skipped on its next direct mint |
-| `0xE1` | Fast-forward nonce | Advance personal account's memo-instruction nonce |
-| `0xE2` | Replace executor fee | Set replacement executor fee for a stuck XRPL transaction |
+| `0xE0` | Skip memo | Mark a target XRPL transaction's memo to be skipped on its next direct mint. Used to recover FXRP when `executeDirectMintingWithData` reverted — see [Failure Handling & Recovery](#failure-handling--recovery) |
+| `0xE1` | Fast-forward nonce | Advance the personal account's memo-instruction nonce when it is stuck after a partial or abandoned flow |
+| `0xE2` | Replace executor fee | Set a replacement executor fee for a stuck XRPL transaction |
 | `0xD0` | Pin executor | Pin a specific executor address to the personal account |
 | `0xD1` | Unpin executor | Unpin the executor from the personal account |
 
@@ -262,6 +262,8 @@ Custom instructions are packaged as an EIP-4337 `PackedUserOperation`. Only thre
 | `10-41` | userOpHash | `keccak256(abi.encode(userOp))` |
 
 The user delivers the full `PackedUserOperation` bytes to an executor off-chain. The executor calls `executeDirectMintingWithData(proof, data)` on AssetManager with `msg.value = sum(call.value)`. The controller verifies `keccak256(_data) == userOpHash` before executing. This keeps the XRPL memo constant at 42 bytes regardless of batch size.
+
+`executeDirectMintingWithData` is **fully atomic**: it mints FXRP to the personal account and dispatches the user operation in one Flare transaction. If any step reverts (hash mismatch, bad nonce, an inner call failing, insufficient `msg.value`), the **entire transaction rolls back — no FXRP is minted** and no `UserOperationExecuted` event fires. See [Failure Handling & Recovery](#failure-handling--recovery).
 
 **Memo Field Custom Instruction (`0xFF`) — simpler, single-actor:**
 
@@ -327,6 +329,45 @@ const userOp = {
 **Use `0xFF` when:** call batch fits in ~1024 bytes and you don't want to coordinate with an executor.
 
 See [Custom Instruction Comparison](https://dev.flare.network/smart-accounts/custom-instruction-comparison) for a detailed trade-off guide.
+
+## Failure Handling & Recovery
+
+The `0xFE` / `0xFF` direct-minting-with-custom-instruction flow is atomic on the Flare side. When `executeDirectMintingWithData` (or `executeDirectMinting` for `0xFF`) reverts, the whole Flare transaction rolls back:
+
+- **No FXRP is minted** on Flare and **no user operation runs** — there is no `UserOperationExecuted` event.
+- The XRPL payment is **not reversed** — the underlying XRP stays at the [Core Vault](https://dev.flare.network/fassets/core-vault) until a successful direct mint finalizes it. It is not auto-refunded to the user's XRPL wallet.
+
+The intended UX is *mint + user operation in one atomic transaction* (e.g. mint FXRP and withdraw to an EOA in a single call), so this failure path should be rare.
+
+### Common revert reasons
+
+Any validation/execution failure inside `handleMintedFAssets` reverts the whole call:
+
+- `sender` ≠ personal account → `InvalidSender`
+- `nonce` ≠ current memo nonce (`getNonce`) → `InvalidNonce`
+- memo length ≠ 42 bytes → `InvalidMemoData`; unknown instruction byte → `InvalidInstructionId`
+- `keccak256(_data)` ≠ memo hash → `CustomInstructionHashMismatch(expected, actual)`
+- executor `msg.value` < sum of inner `call.value` → inner `CallFailed`, whole tx reverts
+- account has a pinned executor (`getExecutor`) and caller isn't it → `WrongExecutor`
+- any inner call reverts → surfaced as `CallFailed`, whole tx reverts
+
+### Recovery after a failed / stuck mint
+
+If the mint reverted (or the executor never submitted the proof) and the stuck transaction ID is not yet used on-chain (`isTransactionIdUsed` returns `false`), the user recovers FXRP **without** running the original user operation:
+
+1. Send an XRPL `Payment` with memo opcode **`0xE0` (skip memo)** targeting the stuck transaction ID. Its memo uses the same 42-byte header shape as `0xFE`/`0xFF`: `[0xE0 | walletId(1B) | executorFeeUBA(8B) | targetTxId(32B)]`. This payment must carry a positive net mint amount (fee-only direct mints revert on-chain), so it mints a small amount of FXRP itself (e.g. 1 net XRP).
+2. The executor calls `executeDirectMintingWithData(recoveryProof, "0x")` for the recovery payment, which emits `IgnoreMemoSet` on the personal account, tying it to the stuck transaction ID.
+3. The executor re-submits `executeDirectMintingWithData` for the **original** stuck payment. Because the skip flag is set, the controller mints FXRP to the personal account **without** dispatching the original user operation. On retry, pass the original ABI-encoded `PackedUserOperation` bytes as `_data` for a `0xFE` stuck payment; `"0x"` suffices for `0xFF`.
+
+The recovered FXRP can then be moved via standard [FAssets instructions](#fxrp-instructions-type-0x0_) (`0x02` redeem) or a fresh user operation using the **current** `getNonce`. Related recovery opcodes: **`0xE1`** (fast-forward nonce) and **`0xE2`** (replace executor fee for a stuck payment). See the [Recover Stuck Mint Transaction guide](https://dev.flare.network/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts).
+
+### Avoiding duplicate-nonce failures
+
+A common revert cause is submitting **two XRPL payments in short succession**, each embedding a different `PackedUserOperation` but both using the **same** `getNonce` value (e.g. two withdraw attempts built before either mint finalizes). Only one payment can consume a given nonce — whichever mint executes first succeeds and increments the nonce; the other reverts with `InvalidNonce`, leaving its XRP at the Core Vault until recovered. To avoid this:
+
+- Read `getNonce` once per XRPL payment; do not reuse it across concurrent flows.
+- Wait for the first mint to finalize — or confirm it reverted — before building another payment with a new user operation.
+- **Executors:** if the `AssetManager` emits `DirectMintingDelayed`, wait until `executionAllowedAt` and re-call `executeDirectMintingWithData`. Do not treat a delayed mint as a hard failure and prompt the user to resend a duplicate-nonce payment.
 
 ## CLI Tool — Complete Reference
 
