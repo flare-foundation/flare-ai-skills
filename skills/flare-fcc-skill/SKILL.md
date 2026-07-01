@@ -290,6 +290,51 @@ Then restart from Step 0. Note: on-chain state (deployed contracts, registered e
 - **TEE registration times out** — try `docker compose restart ext-proxy`; FDC attestation requires active relay providers on Coston2.
 - **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart Docker stack, re-run `post-build.sh` and `test.sh`.
 
+## fce-weather-insurance: Parametric Insurance Example
+
+The `fce-weather-insurance` repo is a full FCC application: **parametric rainfall insurance** settled from OpenWeatherMap data inside the enclave. It shows the pattern for TEE workloads that fetch off-chain data, sign a result, and have an on-chain contract verify that signature before moving funds — the same shape as any oracle-backed settlement.
+
+### Flow
+
+1. A policyholder buys rainfall cover for a date + location, paying an ERC-20 premium (`payToken`); the contract reserves the payout from pool liquidity.
+2. From `settlementUnlockAt` (00:00 UTC the day after the coverage date), a keeper calls `requestSettlement`, which routes a `WEATHER`/`SETTLE` instruction to the extension.
+3. The extension fetches that day's precipitation from OpenWeatherMap **inside the enclave** and signs the settlement result.
+4. Anyone calls `settle()` with the signed `ActionResult`; the contract `ecrecover`s the signer, requires it equals the registered `teeAddress`, and pays out if the rainfall threshold was met.
+
+### OP identifiers (`OP_TYPE_WEATHER = bytes32("WEATHER")`)
+
+| Command  | Purpose |
+| -------- | ------- |
+| `FETCH`  | Return current weather JSON for a city (testing / dApp display). |
+| `SETTLE` | Fetch daily rainfall for a policy and return a signed settlement payload. |
+| `BUY`    | Decrypt an ECIES-encrypted private policy and return attested terms. |
+
+As always, the constants must match exactly across `WeatherInsurance.sol` and `internal/config/config.go`.
+
+### Public vs private policies
+
+- **Public buy** (`buyPolicy`): all terms are on-chain; caller `approve`s the premium first.
+- **Private buy** (`buyPolicyPrivate`): the buyer ECIES-encrypts ABI-encoded `PrivateBuyParams` with the extension public key; the ciphertext is sent as a `WEATHER`/`BUY` instruction. The TEE decrypts via the node's `/decrypt` endpoint, holds the threshold in enclave memory keyed by `termsCommitment`, and the buyer finalizes with `relayPrivateBuy` (which verifies the TEE signature). Only the commitment lives on-chain until settlement.
+
+### TEE signature verification
+
+Both `relayPrivateBuy` and `settle` verify the TEE result the same way: reconstruct the hash the node signed and recover the signer, requiring it equal `teeAddress`.
+
+```solidity
+bytes32 resultHash = keccak256(abi.encodePacked(
+    keccak256(_resultData), _actionId, keccak256(bytes(_submissionTag)), _status));
+address signer = _recover(_ethSigned(resultHash), _signature); // EIP-191 personal-sign
+require(signer == teeAddress, "bad TEE signature");
+```
+
+The node signs `ActionResult.Hash()` with the EIP-191 prefix; only successful (`status == 1`) results are accepted. `SettlementTime` (a library) computes `settlementUnlockAt` = midnight UTC the day after coverage.
+
+### Deploy notes (differ from the scaffold/fce-sign)
+
+- Activate with `./scripts/use-chain.sh local coston2` (no language arg — the app is Go).
+- Set `OPENWEATHERMAP_API_KEY` and `PAY_TOKEN` in `.env.local.coston2`. A mock ERC-20 exists on Coston2 at `0x53192e788991AD96bC180249B15AefB94E597dD1`, or deploy your own.
+- Deploy with `./scripts/pre-build.sh` **then `./scripts/extension-setup.sh`** (the latter calls `setPayToken` on the deployed contract). The rest (ngrok on `6674`, `post-build.sh`, attestation, code-hash whitelisting) matches the scaffold lifecycle below.
+
 ## Attestation and Reproducible Builds
 
 The TEE's trust comes from **remote attestation**: the Confidential Space VM measures the running image and reports a **code hash**. Flare's data providers (FTDC) only accept results from a TEE whose code hash has been **whitelisted on-chain** for that extension. This makes builds security-critical:

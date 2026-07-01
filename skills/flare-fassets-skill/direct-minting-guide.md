@@ -23,6 +23,19 @@ Direct minting enables users to create FAssets (currently FXRP) through a **sing
 2. Minting parameters (recipient, preferred executor) are encoded in the **destination tag** or **memo field**.
 3. An executor calls `executeDirectMinting` on Flare to finalize; the executor receives a fee.
 
+## Finalizing on Flare — Two Entry Points
+
+After the XRPL payment confirms, an executor finalizes the mint by calling one of two `AssetManager` entry points with an FDC `XRPPayment` proof. No prior collateral reservation is required.
+
+| Entry point | Use for |
+|-------------|---------|
+| `executeDirectMinting(IXRPPayment.Proof _payment)` | Plain direct mints to an EOA/contract (32-byte or 48-byte memo, or destination tag); and smart-account flows where the full `PackedUserOperation` is carried **inline** in the XRPL memo (`0xFF` memo-field custom instruction). |
+| `executeDirectMintingWithData(IXRPPayment.Proof _payment, bytes _data)` | Smart-account flows where the XRPL memo commits to a user operation **by hash only** (`0xFE` custom instruction). The executor supplies the ABI-encoded `PackedUserOperation` in `_data` alongside the proof. |
+
+Both are `payable`. On success the executor receives the executor fee and the contract emits `DirectMintingExecuted`.
+
+**Smart-account atomicity:** When the recipient is a [Flare Smart Account](../flare-smart-accounts-skill/SKILL.md) personal account and the XRPL memo carries a custom instruction (`0xFE` or `0xFF`), the mint and the user operation are dispatched **atomically** — `executeDirectMintingWithData` mints FXRP and runs the user op in one transaction. If that call reverts, **no FXRP is minted** and the underlying XRP remains at the Core Vault until recovered (it is not auto-refunded to XRPL). See the smart-accounts skill's recovery flow (`0xE0` skip-memo) for how a stuck payment is finalized.
+
 ## Fee Structure
 
 Two fees are deducted from the underlying payment amount:
