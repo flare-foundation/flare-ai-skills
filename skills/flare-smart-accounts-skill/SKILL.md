@@ -219,7 +219,7 @@ When minting FXRP directly to a smart account via the FAssets direct minting pat
 | `0xFE` | Custom Instruction | 42-byte memo committing `keccak256(PackedUserOperation)`; bytes delivered off-chain by executor |
 | `0xFF` | Memo Field Custom Instruction | Full `abi.encode(PackedUserOperation)` carried inline in memo (capped at ~1024 bytes) |
 | `0xE0` | Skip memo | Mark a target XRPL transaction's memo to be skipped on its next direct mint. Used to recover FXRP when `executeDirectMintingWithData` reverted — see [Failure Handling & Recovery](#failure-handling--recovery) |
-| `0xE1` | Fast-forward nonce | Advance the personal account's memo-instruction nonce when it is stuck after a partial or abandoned flow |
+| `0xE1` | Fast-forward nonce | Advance the personal account's memo-instruction nonce when it is stuck after a partial or abandoned flow — see [Fast-forwarding a stuck nonce](#fast-forwarding-a-stuck-nonce-0xe1) |
 | `0xE2` | Replace executor fee | Set a replacement executor fee for a stuck XRPL transaction |
 | `0xD0` | Pin executor | Pin a specific executor address to the personal account |
 | `0xD1` | Unpin executor | Unpin the executor from the personal account |
@@ -360,6 +360,17 @@ If the mint reverted (or the executor never submitted the proof) and the stuck t
 3. The executor re-submits `executeDirectMintingWithData` for the **original** stuck payment. Because the skip flag is set, the controller mints FXRP to the personal account **without** dispatching the original user operation. On retry, pass the original ABI-encoded `PackedUserOperation` bytes as `_data` for a `0xFE` stuck payment; `"0x"` suffices for `0xFF`.
 
 The recovered FXRP can then be moved via standard [FAssets instructions](#fxrp-instructions-type-0x0_) (`0x02` redeem) or a fresh user operation using the **current** `getNonce`. Related recovery opcodes: **`0xE1`** (fast-forward nonce) and **`0xE2`** (replace executor fee for a stuck payment). See the [Recover Stuck Mint Transaction guide](https://dev.flare.network/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts).
+
+### Fast-forwarding a stuck nonce (`0xE1`)
+
+`0xE0` recovery mints FXRP from the stuck payment but deliberately **skips** the original user operation — the memo-instruction nonce stays where it was, still pointing at the abandoned `PackedUserOperation`. Use `0xE1` (fast-forward nonce) to jump `getNonce` forward past that abandoned slot before building a fresh `0xFE`/`0xFF` instruction. Only do this after confirming the stuck payment is actually minted (`isTransactionIdUsed == true`) — if it isn't minted yet, run `0xE0` recovery first, not `0xE1`.
+
+1. Send an XRPL `Payment` with memo opcode **`0xE1`**, same 42-byte header shape as the other recovery opcodes: `[0xE1 | walletId(1B) | executorFeeUBA(8B) | newNonce(32B)]`. Like `0xE0`, this payment must carry a positive net mint amount — fee-only direct mints revert on-chain.
+2. Validate `newNonce` client-side before sending: it must be **strictly greater** than the current `getNonce`, and the jump (`newNonce - currentNonce`) must not exceed `type(uint32).max`. On-chain, an invalid jump reverts with `InvalidNonceIncrease`.
+3. The executor calls `executeDirectMintingWithData(proof, "0x")` for the `0xE1` payment — no `_data` is needed since no user operation runs. On success the receipt has a `NonceIncreased(personalAccount, newNonce)` event and **no** `UserOperationExecuted` event.
+4. Build the next `0xFE`/`0xFF` user operation with `nonce == getNonce(personalAccount)` (now `newNonce`).
+
+See the [Fast-Forward Nonce guide](https://dev.flare.network/smart-accounts/guides/typescript-viem/fast-forward-nonce-ts) for the full runnable walkthrough, including the combined `0xFE` (abandoned) → `0xE0` → `0xE1` recovery demo.
 
 ### Avoiding duplicate-nonce failures
 

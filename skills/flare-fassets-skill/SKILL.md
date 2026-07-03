@@ -164,10 +164,10 @@ A single-transaction alternative to standard minting. No collateral reservation 
 **Rate limits (tumbling windows):** Direct minting uses clock-aligned tumbling windows (hourly: 3600s aligned to UTC, daily: 86400s aligned to 00:00 UTC). Mints over the cap are delayed, not rejected. Query:
 - `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()` — caps
 - `getDirectMintingHourlyLimiterState()`, `getDirectMintingDailyLimiterState()` — raw window state (advance off-chain for live values)
-- `getDirectMintingsUnblockUntilTimestamp()` — if future, limiter is temporarily disabled by governance
+- `getDirectMintingsUnblockUntilTimestamp()` — if future, the **hourly/daily** limiter is temporarily disabled by governance (does not bypass the large-mint delay)
 - `assetMintingGranularityUBA()` — granularity to convert AMG units to UBA
-- `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — large-mint independent delay
-Watch for `DirectMintingDelayed` event. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits)
+- `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — a mint strictly above the threshold is delayed independently of the hourly/daily windows
+Watch for `DirectMintingDelayed` event; the binding rule is whichever pushes `executionAllowedAt` furthest out. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits)
 
 **MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
 - `reserve()` — payable; reserves a tag NFT, returns tag ID

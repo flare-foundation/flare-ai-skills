@@ -25,6 +25,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [Cross-Chain Redeem](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts) — Redeem FXRP back to XRP with cross-chain flows
 - [Cross-Chain Redeem to Tag](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts) — Redeem FXRP with a destination tag for exchange addresses
 - [Recover Stuck Mint Transaction](https://dev.flare.network/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts) — Recover FXRP when a smart-account direct mint reverted or was never finalized, using the `0xE0` skip-memo flow ([`recover-direct-mint-transaction.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/recover-direct-mint-transaction.ts))
+- [Fast-Forward Nonce](https://dev.flare.network/smart-accounts/guides/typescript-viem/fast-forward-nonce-ts) — Advance a stuck memo-instruction nonce after `0xE0` recovery skipped the original user operation, using the `0xE1` opcode ([`fast-forward-nonce.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fast-forward-nonce.ts))
 
 ## CLI Repository
 
@@ -46,7 +47,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 
 ## Contract Interfaces
 
-- [IMasterAccountController](https://dev.flare.network/smart-accounts/reference/IMasterAccountController) — Central contract: `getPersonalAccount`, `getNonce`, `getExecutor`, `executeInstruction`, `reserveCollateral`, `handleMintedFAssets`; events `UserOperationExecuted`, `IgnoreMemoSet` (emitted by the `0xE0` skip-memo recovery flow); errors `InvalidSender`/`InvalidNonce`/`InvalidMemoData`/`InvalidInstructionId`/`WrongExecutor`
+- [IMasterAccountController](https://dev.flare.network/smart-accounts/reference/IMasterAccountController) — Central contract: `getPersonalAccount`, `getNonce`, `getExecutor`, `executeInstruction`, `reserveCollateral`, `handleMintedFAssets`; events `UserOperationExecuted`, `IgnoreMemoSet` (emitted by the `0xE0` skip-memo recovery flow), `NonceIncreased` (emitted by the `0xE1` fast-forward-nonce flow); errors `InvalidSender`/`InvalidNonce`/`InvalidMemoData`/`InvalidInstructionId`/`WrongExecutor`/`InvalidNonceIncrease`
 - [IPersonalAccount](https://dev.flare.network/smart-accounts/reference/IPersonalAccount) — `executeUserOp(Call[])`, `Call` struct, `CallFailed` error
 - [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) — FAssets asset manager interface; includes `executeDirectMinting` and `executeDirectMintingWithData`
 
