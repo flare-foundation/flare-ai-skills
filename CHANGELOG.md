@@ -17,6 +17,7 @@ and this project adheres to
 
 ### Changed
 
+- Synced skills with `developer-hub` up to commit `9ac2cee5` — FAssets direct-minting large-mint delay semantics (strict threshold, independent of the hourly/daily windows and governance's `unblockDirectMintingsUntil`), the `waitForDirectMintingOutcome` helper rename, a new "Fast-forwarding a stuck nonce (`0xE1`)" section in `flare-smart-accounts-skill` with the `NonceIncreased`/`InvalidNonceIncrease` events, and reordered FCC sign-extension deploy steps (reserve the ngrok proxy URL before deploying the contract, plus a port-6674 exposure warning)
 - Synced skills with `developer-hub` up to commit `70c274bd` — FAssets direct-minting "Finalizing on Flare" entry points (`executeDirectMinting` vs `executeDirectMintingWithData`) and smart-account atomicity/failure-handling clarifications
 
 ## [v1.0.0](https://github.com/flare-foundation/flare-ai-skills) - 2026-02-12

@@ -173,19 +173,22 @@ INITIAL_OWNER="0x<your-address>"
 ```
 Re-run `use-chain.sh` after editing so `.env` picks up changes.
 
-**Step 2 — Deploy contract and register extension:**
+**Step 2 — Reserve a public proxy URL** (separate terminal): `post-build.sh`, `start-services.sh`, and `test.sh` all read `EXT_PROXY_URL` from `.env`, so set it **before** deploying the contract or starting Docker services.
+
+> **Security:** `ngrok http 6674` makes your local **ext-proxy** public — port 6674 exposes the proxy HTTP API and anyone with the URL can call it. Use ngrok only for Coston2 testnet, and stop the tunnel when finished.
+
+```bash
+ngrok http 6674
+```
+Copy the HTTPS URL from ngrok's **Forwarding** line and set `EXT_PROXY_URL` in `.env.local.coston2`, then re-run `use-chain.sh`. The proxy isn't running yet — ngrok forwards traffic once Step 5 starts `ext-proxy`. The `ngrok` free tier keeps this URL stable across restarts, so this is normally a one-time step.
+
+**Step 3 — Deploy contract and register extension:**
 ```bash
 ./scripts/pre-build.sh
 ```
 Compiles Solidity, deploys `InstructionSender`, registers the extension on-chain. Writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extension.env`.
 
 > **Warning:** once `config/extension.env` exists, pre-build refuses to run again. Use `--force` only when intentionally creating a new extension — it deploys a new `InstructionSender` and registers a new extension ID, which will cause `MachineManager.TooMany()` if an older TEE machine is still registered under the previous extension ID.
-
-**Step 3 — Start the ngrok tunnel** (separate terminal):
-```bash
-ngrok http 6674
-```
-Copy the HTTPS URL and set `EXT_PROXY_URL` in `.env.local.coston2`, then re-run `use-chain.sh`.
 
 **Step 4 — Configure the indexer DB:**
 ```bash
@@ -198,7 +201,7 @@ Edit the `[db]` block with the Coston2 indexer credentials (host `34.38.42.208`,
 ```bash
 ./scripts/start-services.sh
 ```
-Wait for the proxy: `until curl -sf http://localhost:6674/info >/dev/null 2>&1; do sleep 2; done`
+Builds the extension image, then starts redis, ext-proxy, and extension-tee. The script itself waits for `EXT_PROXY_URL/info` — with ngrok already running from Step 2, that check goes through your public tunnel to the local proxy. Wait for the proxy locally: `until curl -sf http://localhost:6674/info >/dev/null 2>&1; do sleep 2; done`. Confirm only the extension proxy is listening on 6674: `lsof -i :6674`.
 
 **Step 6 — Verify the proxy:**
 ```bash
@@ -288,7 +291,7 @@ Then restart from Step 0. Note: on-chain state (deployed contracts, registered e
 - **`Verification.ChallengeExpired`** — re-run `post-build.sh`.
 - **`code hashes do not match`** — `SIMULATED_TEE` and container `MODE` disagree; use `SIMULATED_TEE=true` with `MODE=1` (injected by Docker Compose).
 - **TEE registration times out** — try `docker compose restart ext-proxy`; FDC attestation requires active relay providers on Coston2.
-- **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart Docker stack, re-run `post-build.sh` and `test.sh`.
+- **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart the ngrok tunnel if needed (`ngrok http 6674`), restart Docker stack, re-run `post-build.sh` and `test.sh`.
 
 ## fce-weather-insurance: Parametric Insurance Example
 

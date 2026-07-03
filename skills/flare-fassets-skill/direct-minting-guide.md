@@ -97,7 +97,7 @@ Two binary formats are supported in the XRPL transaction memo field:
 - Prefix `0x4642505266410021` signals `DIRECT_MINTING_EX`.
 - Set executor address to `address(0)` (zero address) to allow anyone to execute.
 
-**Developer guide (TypeScript/viem):** [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — end-to-end example from `flare-viem-starter`: build the 32-byte memo (prefix `0x4642505266410018` + 4 zero bytes + recipient address, lowercased without `0x`), send XRPL payment to the Core Vault, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`. Helpers: `getDirectMintingPaymentAddress()`, `computeDirectMintingPaymentAmountXrp()` (covers minting + executor fees), `waitForDirectMintingExecuted()`.
+**Developer guide (TypeScript/viem):** [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — end-to-end example from `flare-viem-starter`: build the 32-byte memo (prefix `0x4642505266410018` + 4 zero bytes + recipient address, lowercased without `0x`), send XRPL payment to the Core Vault, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`. Helpers: `getDirectMintingPaymentAddress()`, `computeDirectMintingPaymentAmountXrp()` (covers minting + executor fees), `waitForDirectMintingOutcome()` (logs `executionAllowedAt` if `DirectMintingDelayed` fires first, then keeps polling until `DirectMintingExecuted` — do not treat the delay as a failure or resend the XRPL payment).
 
 **Skill script (ethers + xrpl):** [scripts/direct-mint-fxrp.ts](scripts/direct-mint-fxrp.ts) — reads Core Vault address and fee parameters, builds the 32-byte memo, and submits the XRPL Payment. Dry-run by default.
 
@@ -130,9 +130,12 @@ Direct minting is subject to rate limits that delay (not reject) large or high-f
 
 **Throttling behavior:**
 - Limits delay the execution rather than rejecting it.
-- Large mints above the threshold incur a fixed delay independently.
-- Delayed mints emit the `DirectMintingDelayed` event with an `executionAllowedAt` timestamp.
-- Governance can unblock delayed mints via `unblockDirectMintingsUntil` after manual review.
+- A mint is "large" when its amount is **strictly greater than** `getDirectMintingLargeMintingThresholdUBA()`; it then incurs the fixed `getDirectMintingLargeMintingDelaySeconds()` delay independently of the hourly/daily windows — this still applies even when both windows have full headroom.
+- Delayed mints emit the `DirectMintingDelayed` event with an `executionAllowedAt` timestamp; a bound mint does not revert, it re-executes via the same finalizing call (`executeDirectMinting`/`executeDirectMintingWithData`) with the same FDC proof once `executionAllowedAt` passes.
+- If multiple rules apply, `executionAllowedAt` is whichever pushes furthest into the future.
+- Governance can unblock the **hourly/daily** limiter via `unblockDirectMintingsUntil` after manual review — this bypass does **not** apply to the large-minting delay; amounts above the threshold are still held for `getDirectMintingLargeMintingDelaySeconds()`.
+
+**Pre-flight check:** [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits) — reads and replays the tumbling-window state off-chain, then evaluates a proposed amount against all three delay mechanisms (hourly, daily, large-mint) to report whether it would execute immediately or emit `DirectMintingDelayed`. `bigintMin(hourlyHeadroom, dailyHeadroom, largeThresholdUBA)` is the largest amount that avoids delay from any rule (minting exactly at the large-mint threshold is fine; strictly above it triggers the hold).
 
 ## Operational Parameters (Testnet Coston2)
 
