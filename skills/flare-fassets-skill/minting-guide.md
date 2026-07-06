@@ -175,7 +175,7 @@ Direct minting is subject to rate limits (hourly/daily caps, large-mint delays) 
 Successfully minted FAssets can be:
 - Used in Flare DeFi (lending, liquidity pools, vaults like Firelight)
 - Transferred to other addresses on Flare
-- Bridged cross-chain via LayerZero OFT
+- Bridged cross-chain via LayerZero OFT — see [FXRP Omnichain Fungible Token (OFT)](https://dev.flare.network/fxrp/oft) for supported chains and the OFT Adapter mechanism
 - Redeemed back to native XRP
 
 ## Environment Variables
