@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `9ac2cee52b4b65e0b83378e338a01f90a9959d39`
-- **Date:** 2026-07-03
-- **Subject:** `feat(docs): add Fast-Forward Nonce guide and update related documentation (#1438)`
+- **Commit:** `01146a9b876ccb596b7da2c3d6f3e15dd0b797e6`
+- **Date:** 2026-07-06
+- **Subject:** `feat(docs): fassets direct mint troubleshooting guide (#1442)`
 
 ## How to sync next time
 

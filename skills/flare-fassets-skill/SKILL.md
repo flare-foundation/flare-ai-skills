@@ -68,6 +68,17 @@ It is designed to be trustless and redeemable back to XRP.
 
 **Guide:** [FXRP Overview](https://dev.flare.network/fxrp/overview)
 
+### FXRP Cross-Chain (OFT)
+
+FXRP is also deployed as a LayerZero **Omnichain Fungible Token (OFT)**, letting holders move FXRP between Flare and other chains without wrapped versions or separate liquidity pools.
+
+- **Mechanism:** On Flare, an **OFT Adapter** contract locks FXRP when bridging out; on destination chains, native **OFT** contracts mint/burn tokens as they move in/out. Total supply stays unified across chains.
+- **Security:** Cross-chain messages are verified by a LayerZero V2 **DVN (Decentralized Verifier Network)** stack (LayerZero Labs, Nethermind, Canary, Horizen) rather than a single verifier.
+- **Bridging:** Use [Stargate Finance](https://stargate.finance/?srcChain=flare&srcToken=0xAd552A648C74D49E10027AB8a618A3ad4901c5bE), or the [Auto Minting and Bridging FXRP](https://dev.flare.network/fxrp/oft/fxrp-automint) / [FAsset Auto-Redemption](https://dev.flare.network/fxrp/oft/fxrp-autoredeem) flows for mint-and-bridge or bridge-and-redeem in one step.
+- **Mainnet deployments (OFT Adapter on Flare, native OFT elsewhere):** Flare, HyperEVM, HyperCore, Ethereum Mainnet, Base, BNB Smart Chain, Monad — see [FXRP OFT Deployments](https://dev.flare.network/fxrp/oft) for current addresses; do not hardcode without verifying against that page or a block explorer.
+
+**Guide:** [FXRP Omnichain Fungible Token (OFT)](https://dev.flare.network/fxrp/oft)
+
 ## Key Participants
 
 | Role | Responsibility |
@@ -167,7 +178,7 @@ A single-transaction alternative to standard minting. No collateral reservation 
 - `getDirectMintingsUnblockUntilTimestamp()` — if future, the **hourly/daily** limiter is temporarily disabled by governance (does not bypass the large-mint delay)
 - `assetMintingGranularityUBA()` — granularity to convert AMG units to UBA
 - `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — a mint strictly above the threshold is delayed independently of the hourly/daily windows
-Watch for `DirectMintingDelayed` event; the binding rule is whichever pushes `executionAllowedAt` furthest out. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits)
+Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (large-mint threshold) events; the binding rule is whichever pushes `executionAllowedAt` furthest out. Query `directMintingDelayState(transactionId)` for current state, and call `markUnblockedDirectMintingAllowed(transactionId)` after a governance unblock (`DirectMintingsUnblocked`) to reset the executor exclusive window. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits). Full troubleshooting: [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/direct-minting-troubleshooting)
 
 **MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
 - `reserve()` — payable; reserves a tag NFT, returns tag ID

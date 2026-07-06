@@ -351,6 +351,8 @@ Any validation/execution failure inside `handleMintedFAssets` reverts the whole 
 - account has a pinned executor (`getExecutor`) and caller isn't it → `WrongExecutor`
 - any inner call reverts → surfaced as `CallFailed`, whole tx reverts
 
+For direct-minting-side errors (rate limits, wrong recipient, unrecognized memo routing to the smart account manager), see the [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/direct-minting-troubleshooting#smart-account-path) guide's Smart Account Path section.
+
 ### Recovery after a failed / stuck mint
 
 If the mint reverted (or the executor never submitted the proof) and the stuck transaction ID is not yet used on-chain (`isTransactionIdUsed` returns `false`), the user recovers FXRP **without** running the original user operation:
