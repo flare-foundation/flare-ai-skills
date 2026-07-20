@@ -75,7 +75,7 @@ FXRP is also deployed as a LayerZero **Omnichain Fungible Token (OFT)**, letting
 - **Mechanism:** On Flare, an **OFT Adapter** contract locks FXRP when bridging out; on destination chains, native **OFT** contracts mint/burn tokens as they move in/out. Total supply stays unified across chains.
 - **Security:** Cross-chain messages are verified by a LayerZero V2 **DVN (Decentralized Verifier Network)** stack (LayerZero Labs, Nethermind, Canary, Horizen) rather than a single verifier.
 - **Bridging:** Use [Stargate Finance](https://stargate.finance/?srcChain=flare&srcToken=0xAd552A648C74D49E10027AB8a618A3ad4901c5bE), or the [Auto Minting and Bridging FXRP](https://dev.flare.network/fxrp/oft/fxrp-automint) / [FAsset Auto-Redemption](https://dev.flare.network/fxrp/oft/fxrp-autoredeem) flows for mint-and-bridge or bridge-and-redeem in one step.
-- **Mainnet deployments (OFT Adapter on Flare, native OFT elsewhere):** Flare, HyperEVM, HyperCore, Ethereum Mainnet, Base, BNB Smart Chain, Monad — see [FXRP OFT Deployments](https://dev.flare.network/fxrp/oft) for current addresses; do not hardcode without verifying against that page or a block explorer.
+- **Mainnet deployments (OFT Adapter on Flare, native OFT elsewhere):** Flare, HyperEVM, HyperCore, Ethereum Mainnet, Base, BNB Smart Chain, Monad, Katana — see [FXRP OFT Deployments](https://dev.flare.network/fxrp/oft) for current addresses; do not hardcode without verifying against that page or a block explorer.
 
 **Guide:** [FXRP Omnichain Fungible Token (OFT)](https://dev.flare.network/fxrp/oft)
 
@@ -91,28 +91,27 @@ FXRP is also deployed as a LayerZero **Omnichain Fungible Token (OFT)**, letting
 
 ## FAsset Workflow
 
-### Minting
-1. User selects an agent and **reserves collateral** (pays fee in FLR).
-2. User **sends underlying asset** (e.g. XRP) to the agent on the underlying chain (with payment reference).
-3. **FDC verifies** the payment and produces attestation/proof.
-4. User (or executor) calls **executeMinting** with proof → FAssets are minted on Flare.
+### Minting (Core Vault, XRP)
 
-**Fees:** Collateral Reservation Fee (CRF, native), Minting Fee (underlying), optional Executor Fee (native).
+> **Minting model change:** The standard FXRP minting path is now a **single XRPL payment to the Core Vault** (what was previously called "direct minting"). The older collateral-reservation flow (reserve collateral → pay agent → `executeMinting`) is **archived/legacy** — see [Standard Minting (legacy)](#standard-minting-legacy) below and the [Standard Minting (Archived)](https://dev.flare.network/fassets/standard-minting) reference.
 
-If minting fails, CRF is not returned.
+Minting requires only a **single XRPL payment** to the Core Vault address. No collateral reservation step is needed.
 
-### Direct Minting (XRP Only)
-An alternative minting path that requires only a **single XRPL payment** to the Core Vault address. No collateral reservation step needed.
+1. Encode the minting parameters (recipient, optional executor) via XRP **destination tag** (using `MintingTagManager`) or a binary **memo field**. For the 32-byte memo form, encode `[8-byte DIRECT_MINTING prefix `0x4642505266410018`][4-byte zero padding][20-byte recipient]`; the 48-byte form (`0x4642505266410021` prefix) also encodes an executor.
+2. Send the XRPL **payment** to the Core Vault address (`AssetManager.directMintingPaymentAddress()`).
+3. An **executor** calls `executeDirectMinting` (or `executeDirectMintingWithData` for smart-account hash-commitment memos) on Flare to finalize → FXRP is minted to the recipient.
 
-Parameters (recipient, executor) are encoded via XRP destination tag (using `MintingTagManager`) or binary memo field. For the 32-byte memo form, encode `[8-byte DIRECT_MINTING prefix][4-byte zero padding][20-byte recipient]`. An executor calls `executeDirectMinting` on Flare to finalize.
-
-**Fees:** Percentage-based minting fee (with minimum floor) + flat executor fee, both deducted from the payment. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints.
+**Fees:** Percentage-based minting fee (with a minimum floor) + a flat executor fee, both deducted from the payment. If the payment only covers the minting fee, the executor receives nothing; if it is below the minimum minting fee, no FAssets are minted and the entire payment goes to the fee receiver. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints.
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
 **Developer guides (TypeScript/viem, `flare-viem-starter`):**
-- [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — memo-based path (32-byte memo with `0x4642505266410018` prefix + recipient)
-- [Direct Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — destination-tag path (reserve via `MintingTagManager`, bind recipient, reuse for subsequent payments)
+- [Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-mint) — memo-based path (32-byte memo with `0x4642505266410018` prefix + recipient)
+- [Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-mint-tag) — destination-tag path (reserve via `MintingTagManager`, bind recipient, reuse for subsequent payments)
+
+### Self-Minting (Agents)
+
+Agents can act as minters and mint FAssets directly from their own vaults. When an agent self-mints, it pays the amount on the underlying chain and executes the minting itself; the operation adds a ticket to the [redemption queue](https://dev.flare.network/fassets/redemption#redemption-tickets-and-the-redemption-queue) alongside other users' tickets. Agents can create non-public vaults usable only for self-minting.
 
 ### Redemption
 Users redeem FAssets for the original underlying asset at any time (flow is request → agent pays out on underlying chain).
@@ -159,9 +158,9 @@ Uses ethers; set `FLARE_RPC_URL` or pass your network RPC. **Security:** Review 
 
 ## Developer Integration (High Level)
 
-### Direct Minting (XRP Only)
+### Minting via Core Vault (XRP Only)
 
-A single-transaction alternative to standard minting. No collateral reservation required.
+The standard single-transaction minting path (formerly "direct minting"). No collateral reservation required. The contract-level entry points still use the `directMinting` / `executeDirectMinting` names.
 
 1. **Get Core Vault address:** Call `AssetManager.directMintingPaymentAddress()`.
 2. **Get fee parameters:**
@@ -178,7 +177,7 @@ A single-transaction alternative to standard minting. No collateral reservation 
 - `getDirectMintingsUnblockUntilTimestamp()` — if future, the **hourly/daily** limiter is temporarily disabled by governance (does not bypass the large-mint delay)
 - `assetMintingGranularityUBA()` — granularity to convert AMG units to UBA
 - `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — a mint strictly above the threshold is delayed independently of the hourly/daily windows
-Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (large-mint threshold) events; the binding rule is whichever pushes `executionAllowedAt` furthest out. Query `directMintingDelayState(transactionId)` for current state, and call `markUnblockedDirectMintingAllowed(transactionId)` after a governance unblock (`DirectMintingsUnblocked`) to reset the executor exclusive window. Developer guide: [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits). Full troubleshooting: [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/direct-minting-troubleshooting)
+Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (large-mint threshold) events; the binding rule is whichever pushes `executionAllowedAt` furthest out. Query `directMintingDelayState(transactionId)` for current state, and call `markUnblockedDirectMintingAllowed(transactionId)` after a governance unblock (`DirectMintingsUnblocked`) to reset the executor exclusive window. Developer guide: [Check Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits). Full troubleshooting: [Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting)
 
 **MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
 - `reserve()` — payable; reserves a tag NFT, returns tag ID
@@ -189,11 +188,13 @@ Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (
 - `mintingRecipient(tagId)` — returns current recipient
 - `allowedExecutor(tagId)` — returns active executor (`address(0)` = anyone)
 - `setAllowedExecutor(tagId, executor)` — owner only; restricts execution to `executor` (10-min cooldown; cleared on `transfer`)
-- `transferFrom(from, to, tagId)` — ERC-721 transfer; resets recipient to new owner, clears allowed executor, tag ID unchanged. Use to rotate custody or hand a tag to another account. Developer guide: [Transfer a Minting Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag-transfer)
+- `transferFrom(from, to, tagId)` — ERC-721 transfer; resets recipient to new owner, clears allowed executor, tag ID unchanged. Use to rotate custody or hand a tag to another account. Developer guide: [Transfer a Minting Tag](https://dev.flare.network/fassets/developer-guides/fassets-mint-tag-transfer)
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
-### Standard Minting
+### Standard Minting (legacy)
+
+> **Archived.** The collateral-reservation flow below is the **legacy** minting path, kept for reference and historical integrations. New integrations should use [Minting via Core Vault](#minting-via-core-vault-xrp-only) above. See the [Standard Minting (Archived)](https://dev.flare.network/fassets/standard-minting) reference. `reserveCollateral` / `executeMinting` remain on the `AssetManager` interface.
 
 1. **Reserve collateral:** Call `reserveCollateral(agentVault, lots, feeBIPS, executor)` on AssetManager.
 
@@ -309,7 +310,9 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 - **Lot:** Smallest minting unit; size from AssetManager/FTSO (see "Read FAssets Settings" in reference).
 - **Backing factor:** Minimum collateral ratio agents must maintain.
 - **CRF:** Collateral Reservation Fee. **UBA:** Smallest unit of the underlying asset (e.g. drops for XRP).
-- **Direct Minting:** Single-XRPL-payment minting path via Core Vault (XRP only). No collateral reservation required.
+- **Direct Minting:** The single-XRPL-payment minting path via Core Vault (XRP only), now the **standard** FXRP minting model (docs call it simply "Minting"). No collateral reservation required. Contract entry points keep the `directMinting` / `executeDirectMinting` names.
+- **Self-minting:** An agent minting FAssets from its own vault; adds a redemption-queue ticket. Can use non-public vaults.
+- **Standard Minting (legacy):** The archived collateral-reservation flow (`reserveCollateral` → agent payment → `executeMinting`).
 - **MintingTagManager:** Contract managing ERC-721-like minting tag NFTs that map destination tags to recipient/executor parameters for direct minting. Access via `AssetManager.getMintingTagManager()`.
 - **Destination tag:** 32-bit integer field on XRPL transactions; used in direct minting to route payments to the correct FAsset recipient.
 - **`redeemWithTag`:** Redemption variant that specifies an XRP destination tag for the agent's payout (XRP only; for exchange addresses).

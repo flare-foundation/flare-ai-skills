@@ -43,9 +43,11 @@ The contract verifies the proof, retrieves (or creates) the user's smart account
 
 ### Direct-minting (memo) flow
 
-1. User sends a `Payment` to an FAssets agent's XRPL address that mints FXRP directly to the smart account, with the memo field carrying the instruction.
-2. The FAssets `AssetManager` mints FXRP to `MasterAccountController` and calls back into `handleMintedFAssets`.
-3. `MasterAccountController` routes FAssets to the user's `PersonalAccount` and dispatches any memo instruction (see [Memo Opcodes](#memo-opcodes-direct-minting-flow)).
+1. User sends a `Payment` to the FAssets [Core Vault](https://dev.flare.network/fassets/core-vault) XRPL address (per [FAssets minting](https://dev.flare.network/fassets/minting)) that mints FXRP to the smart account, with the memo field carrying the instruction.
+2. An executor calls `executeDirectMinting`; the FAssets `AssetManager` mints FXRP to `MasterAccountController` and calls back into `handleMintedFAssets`.
+3. `MasterAccountController` routes FAssets to the user's `PersonalAccount`, optionally pays an executor fee, and dispatches any memo instruction (see [Memo Opcodes](#memo-opcodes-direct-minting-flow)).
+
+> **Minting is FAssets minting, not a CRT instruction.** User minting of FXRP no longer uses a Smart Accounts collateral-reservation (CRT) instruction. To mint, send an XRPL `Payment` to the Core Vault with a memo or destination tag as described in [FAssets minting](https://dev.flare.network/fassets/minting). The legacy CRT instructions (`0x00`, `0x10`, `0x20` below) and their CLI encoders may still exist in older tooling but are **not** the recommended mint path. For mint-and-action in one payment, use a [memo-field custom instruction](https://dev.flare.network/smart-accounts/memo-field-custom-instruction).
 
 > **Important:** XRPL transactions targeting smart accounts must **not** use a destination tag. A destination tag forces FAssets direct minting to credit the tag-holder instead of the smart account.
 
@@ -64,8 +66,8 @@ All instructions follow this structure:
 
 ### FXRP Instructions (Type `0x0_`)
 
-#### `0x00` — Collateral Reservation
-Reserve collateral for minting FXRP.
+#### `0x00` — Collateral Reservation _(legacy CRT)_
+Reserve collateral for minting FXRP. **Legacy:** prefer [FAssets minting](https://dev.flare.network/fassets/minting) (XRPL payment to the Core Vault). Documented here for older tooling and historical integrations.
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
@@ -110,8 +112,8 @@ Redeem FXRP back to XRP on XRPL.
 
 Firelight is a vault protocol for stXRP yield.
 
-#### `0x10` — Collateral Reservation + Deposit
-Combined mint FXRP and deposit to Firelight vault.
+#### `0x10` — Collateral Reservation + Deposit _(legacy CRT)_
+Combined mint FXRP and deposit to Firelight vault. **Legacy:** prefer [FAssets minting](https://dev.flare.network/fassets/minting) then the `0x11` deposit instruction, or a [memo-field custom instruction](https://dev.flare.network/smart-accounts/memo-field-custom-instruction) for mint-and-deposit in one payment.
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
@@ -162,8 +164,8 @@ Complete pending withdrawal from Firelight vault.
 
 Upshift is another vault protocol with time-locked withdrawals.
 
-#### `0x20` — Collateral Reservation + Deposit
-Combined mint FXRP and deposit to Upshift vault.
+#### `0x20` — Collateral Reservation + Deposit _(legacy CRT)_
+Combined mint FXRP and deposit to Upshift vault. **Legacy:** prefer [FAssets minting](https://dev.flare.network/fassets/minting) then the `0x21` deposit instruction, or a [memo-field custom instruction](https://dev.flare.network/smart-accounts/memo-field-custom-instruction) for mint-and-deposit in one payment.
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
@@ -351,7 +353,7 @@ Any validation/execution failure inside `handleMintedFAssets` reverts the whole 
 - account has a pinned executor (`getExecutor`) and caller isn't it → `WrongExecutor`
 - any inner call reverts → surfaced as `CallFailed`, whole tx reverts
 
-For direct-minting-side errors (rate limits, wrong recipient, unrecognized memo routing to the smart account manager), see the [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/direct-minting-troubleshooting#smart-account-path) guide's Smart Account Path section.
+For direct-minting-side errors (rate limits, wrong recipient, unrecognized memo routing to the smart account manager), see the [Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting#smart-account-path) guide's Smart Account Path section.
 
 ### Recovery after a failed / stuck mint
 
@@ -413,8 +415,10 @@ All encode commands accept `--wallet-id` (defaults to 0).
 
 #### FXRP Operations
 
+> **Legacy mint path.** `fxrp-cr` (+ `bridge mint-tx`) encodes the deprecated collateral-reservation (CRT) flow and may still exist in `smart_accounts.py`, but it is **not** the recommended mint path. To mint FXRP, use [FAssets minting](https://dev.flare.network/fassets/minting) (XRPL payment to the Core Vault) per the [Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-mint) guide; the CLI does not encode that payment. The `fxrp-transfer` and `fxrp-redeem` commands below remain current.
+
 ```bash
-# Collateral reservation for minting
+# Collateral reservation for minting (legacy CRT — prefer FAssets minting)
 ./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1
 
 # Transfer FXRP to address
@@ -427,8 +431,10 @@ All encode commands accept `--wallet-id` (defaults to 0).
 
 #### Firelight Operations
 
+> **`firelight-cr-deposit` is legacy** (CRT mint + deposit). Prefer [FAssets minting](https://dev.flare.network/fassets/minting) then `firelight-deposit`, or a memo-field custom instruction for mint-and-deposit in one payment.
+
 ```bash
-# Reserve collateral and deposit to vault
+# Reserve collateral and deposit to vault (legacy CRT)
 ./smart_accounts.py encode firelight-cr-deposit --wallet-id 0 --value 1 \
   --agent-vault-id 1 --vault-id 1
 
@@ -444,8 +450,10 @@ All encode commands accept `--wallet-id` (defaults to 0).
 
 #### Upshift Operations
 
+> **`upshift-cr-deposit` is legacy** (CRT mint + deposit). Prefer [FAssets minting](https://dev.flare.network/fassets/minting) then `upshift-deposit`, or a memo-field custom instruction for mint-and-deposit in one payment.
+
 ```bash
-# Reserve collateral and deposit to vault
+# Reserve collateral and deposit to vault (legacy CRT)
 ./smart_accounts.py encode upshift-cr-deposit --wallet-id 0 --value 1 \
   --agent-vault-id 1 --vault-id 2
 
@@ -472,7 +480,8 @@ The operator service bridges to Flare.
 # Or read from stdin
 <encode_command> | ./smart_accounts.py bridge instruction -
 
-# Send XRP to agent vault for minting (after collateral reservation)
+# Send XRP to agent vault for minting (legacy CRT flow, after collateral reservation)
+# NOTE: the standard mint path is now an XRPL payment to the Core Vault — see FAssets minting.
 ./smart_accounts.py bridge mint-tx <transactionHash>
 
 # With --wait flag to wait for confirmation
@@ -510,6 +519,8 @@ Chain commands for complete workflows:
 ```
 
 ## Complete Workflow Examples
+
+> **Note on the mint steps below.** The `fxrp-cr` / `upshift-cr-deposit` + `bridge mint-tx` steps use the **legacy collateral-reservation (CRT)** mint path. In current integrations, mint FXRP via [FAssets minting](https://dev.flare.network/fassets/minting) (XRPL payment to the Core Vault, see [Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-mint)), then run the non-mint Smart Accounts instructions (transfer, deposit, redeem) shown here. The examples are retained to illustrate the CLI's instruction/bridge piping.
 
 ### Example 1: Mint FXRP and Transfer to Another Address
 
@@ -568,8 +579,8 @@ The `MasterAccountController` is the central contract for smart accounts.
 | `getNonce(personalAccount)` | Get current memo-instruction nonce; `PackedUserOperation.nonce` must match this |
 | `getExecutor(personalAccount)` | Get pinned executor for personal account (`address(0)` = no pin) |
 | `executeInstruction(proof, xrplAddress)` | Execute a proof-based instruction |
-| `reserveCollateral(xrplAddress, paymentRef, txId)` | Reserve collateral (no FDC proof needed at this stage) |
-| `executeDepositAfterMinting(reservationId, proof, xrplAddress)` | Second leg of collateral-reservation-and-deposit after minting |
+| `reserveCollateral(xrplAddress, paymentRef, txId)` | _(legacy CRT)_ Reserve collateral (no FDC proof needed at this stage). User minting now uses [FAssets minting](https://dev.flare.network/fassets/minting) (`executeDirectMinting`), not this path |
+| `executeDepositAfterMinting(reservationId, proof, xrplAddress)` | _(legacy CRT)_ Second leg of collateral-reservation-and-deposit after minting |
 | `handleMintedFAssets(...)` | Called by AssetManager when FXRP is direct-minted into a personal account |
 
 ## TypeScript Integration (Viem)

@@ -3,9 +3,9 @@
 Direct minting enables users to create FAssets (currently FXRP) through a **single transaction on the underlying blockchain**, bypassing the standard multi-step collateral reservation process. Payments go to the **Core Vault address** rather than individual agents.
 
 **Sources:**
-- [FAssets Direct Minting (concept)](https://dev.flare.network/fassets/direct-minting)
-- [Direct Mint FXRP (developer guide — memo)](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — TypeScript/viem walkthrough using a 32-byte memo
-- [Direct Mint FXRP with Tag (developer guide — destination tag)](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — TypeScript/viem walkthrough using `MintingTagManager`
+- [FAssets Minting (concept)](https://dev.flare.network/fassets/minting)
+- [Direct Mint FXRP (developer guide — memo)](https://dev.flare.network/fassets/developer-guides/fassets-mint) — TypeScript/viem walkthrough using a 32-byte memo
+- [Direct Mint FXRP with Tag (developer guide — destination tag)](https://dev.flare.network/fassets/developer-guides/fassets-mint-tag) — TypeScript/viem walkthrough using `MintingTagManager`
 
 ## How It Differs from Standard Minting
 
@@ -74,7 +74,7 @@ AssetManager.getDirectMintingFeeReceiver()      // address receiving minting fee
 AssetManager.getMintingTagManager()
 ```
 
-**Developer guide (TypeScript/viem):** [Direct Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag) — end-to-end example from `flare-viem-starter`: reserve tag, bind recipient, send XRP payment with the destination tag, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`.
+**Developer guide (TypeScript/viem):** [Direct Mint FXRP with Tag](https://dev.flare.network/fassets/developer-guides/fassets-mint-tag) — end-to-end example from `flare-viem-starter`: reserve tag, bind recipient, send XRP payment with the destination tag, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`.
 
 **Skill script (ethers + xrpl):** [scripts/direct-mint-fxrp-tag.ts](scripts/direct-mint-fxrp-tag.ts) — reserves a tag (or reuses one via `EXISTING_TAG_ID`), binds recipient, then submits the XRPL Payment with `DestinationTag`. Dry-run by default.
 
@@ -97,7 +97,7 @@ Two binary formats are supported in the XRPL transaction memo field:
 - Prefix `0x4642505266410021` signals `DIRECT_MINTING_EX`.
 - Set executor address to `address(0)` (zero address) to allow anyone to execute.
 
-**Developer guide (TypeScript/viem):** [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting) — end-to-end example from `flare-viem-starter`: build the 32-byte memo (prefix `0x4642505266410018` + 4 zero bytes + recipient address, lowercased without `0x`), send XRPL payment to the Core Vault, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`. Helpers: `getDirectMintingPaymentAddress()`, `computeDirectMintingPaymentAmountXrp()` (covers minting + executor fees), `waitForDirectMintingOutcome()` (logs `executionAllowedAt` if `DirectMintingDelayed` fires first, then keeps polling until `DirectMintingExecuted` — do not treat the delay as a failure or resend the XRPL payment).
+**Developer guide (TypeScript/viem):** [Direct Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-mint) — end-to-end example from `flare-viem-starter`: build the 32-byte memo (prefix `0x4642505266410018` + 4 zero bytes + recipient address, lowercased without `0x`), send XRPL payment to the Core Vault, wait for `DirectMintingExecuted`. Dependencies: `xrpl`, `viem`, `@flarenetwork/flare-wagmi-periphery-package`. Helpers: `getDirectMintingPaymentAddress()`, `computeDirectMintingPaymentAmountXrp()` (covers minting + executor fees), `waitForDirectMintingOutcome()` (logs `executionAllowedAt` if `DirectMintingDelayed` fires first, then keeps polling until `DirectMintingExecuted` — do not treat the delay as a failure or resend the XRPL payment).
 
 **Skill script (ethers + xrpl):** [scripts/direct-mint-fxrp.ts](scripts/direct-mint-fxrp.ts) — reads Core Vault address and fee parameters, builds the 32-byte memo, and submits the XRPL Payment. Dry-run by default.
 
@@ -136,13 +136,13 @@ Direct minting is subject to rate limits that delay (not reject) large or high-f
 - Governance can unblock the **hourly/daily** limiter via `unblockDirectMintingsUntil` after manual review (emits `DirectMintingsUnblocked`) — this bypass does **not** apply to the large-minting delay; amounts above the threshold are still held for `getDirectMintingLargeMintingDelaySeconds()`. After unblocking, call `markUnblockedDirectMintingAllowed(transactionId)` to reset a preferred executor's exclusive window from the unblock time.
 - Query `directMintingDelayState(transactionId)` → `allowedAt` to read the current delay/unblock state for a given XRPL transaction.
 
-**Pre-flight check:** [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-limits) — reads and replays the tumbling-window state off-chain, then evaluates a proposed amount against all three delay mechanisms (hourly, daily, large-mint) to report whether it would execute immediately or emit `DirectMintingDelayed`/`LargeDirectMintingDelayed`. `bigintMin(hourlyHeadroom, dailyHeadroom, largeThresholdUBA)` is the largest amount that avoids delay from any rule (minting exactly at the large-mint threshold is fine; strictly above it triggers the hold).
+**Pre-flight check:** [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits) — reads and replays the tumbling-window state off-chain, then evaluates a proposed amount against all three delay mechanisms (hourly, daily, large-mint) to report whether it would execute immediately or emit `DirectMintingDelayed`/`LargeDirectMintingDelayed`. `bigintMin(hourlyHeadroom, dailyHeadroom, largeThresholdUBA)` is the largest amount that avoids delay from any rule (minting exactly at the large-mint threshold is fine; strictly above it triggers the hold).
 
 **Other events on `executeDirectMinting`:**
 - `DirectMintingExecutedToSmartAccount` — fires instead of `DirectMintingExecuted` when the payment has no registered tag recipient and no valid direct-minting memo; FAssets mint to the smart account manager, which routes them by `sourceAddress`/`memoData`. The executor fee is not set by AssetManager in this path.
 - `DirectMintingPaymentTooSmallForFee` — fires (without reverting) when `receivedAmount < getDirectMintingMinimumFeeUBA()`; the entire payment goes to the fee receiver and neither the minter nor executor receives anything.
 
-**Full troubleshooting reference:** [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/direct-minting-troubleshooting) — pre-flight checklist, irreversible failure modes, `executeDirectMinting` revert table, delay/retry steps, and MintingTagManager pitfalls.
+**Full troubleshooting reference:** [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting) — pre-flight checklist, irreversible failure modes, `executeDirectMinting` revert table, delay/retry steps, and MintingTagManager pitfalls.
 
 ## Operational Parameters (Testnet Coston2)
 

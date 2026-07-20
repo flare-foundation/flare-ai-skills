@@ -32,7 +32,7 @@
  *
  * Usage: npx ts-node scripts/direct-mint-fxrp-tag.ts
  *
- * See: https://dev.flare.network/fassets/developer-guides/fassets-direct-minting-tag
+ * See: https://dev.flare.network/fassets/developer-guides/fassets-mint-tag
  */
 
 import { Contract, JsonRpcProvider, Wallet as EthersWallet, isAddress } from "ethers";

@@ -29,8 +29,10 @@ All transaction signing, key management, attestation, and on-chain execution hap
 
 Use FCC when an application needs **confidential state, secret-holding, or off-chain compute whose integrity is provable on-chain** — e.g. a key manager that signs on behalf of users, sealed-bid auctions, private order matching, or any "the chain triggers it but the computation must stay private and attested" workload.
 
+FCC is in the **final stages of development** (not yet a fully public production system), but you can already build and deploy Flare Compute Extensions on Coston2 — start with the [Build Your First Extension](https://dev.flare.network/fcc/guides/getting-started) guide (Hello World scaffold walkthrough). For the mechanism in depth, see the [FCC whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
+
 **Reference repos:**
-- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension (Go) with contracts, deploy/registration tooling, a types server, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). This is the starting point for building your own extension.
+- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension (Go) with contracts, deploy/registration tooling, a types server, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). This is the starting point for building your own extension; the [Getting Started guide](https://dev.flare.network/fcc/guides/getting-started) walks through it end to end.
 - **`flare-foundation/fce-sign`** — an example extension that stores a private key and signs messages with it, shipped in Go, Python, and TypeScript. Demonstrates the TEE signing port and reproducible builds. Explicitly demo-only for the on-chain-secret part.
 - **`flare-foundation/fce-weather-insurance`** — a full FCC application demonstrating parametric rainfall insurance. Policyholders buy cover on-chain; the TEE fetches OpenWeatherMap data and signs settlement results; anyone calls `settle()` to verify and pay out. Supports public and ECIES-encrypted private policies. Includes a Next.js dApp frontend.
 
@@ -354,7 +356,7 @@ The scaffold scripts chain four phases (`./scripts/full-setup.sh --test` runs al
 3. **post-build** (`post-build.sh`) — `allow-tee-version` whitelists the code hash, then `register-tee` registers the TEE machine on-chain. Use `register-tee -command rRap` so re-runs issue a fresh attestation challenge (capital `R`) and avoid `Verification.ChallengeExpired`.
 4. **test** (`test.sh`) — send instructions through the deployed TEE and verify the round-trip.
 
-**Real testnet** adds: a funded deployer key (Coston2 faucet), a publicly reachable proxy URL (e.g. ngrok tunnel to port `6674`), indexer-DB credentials for the proxy, and a GCP Confidential Space VM to run the image. Verify the deploy by curling the proxy `/info` and confirming `machineData`: `platform` starts with `0x4743505f414d445f534556…` (GCP_AMD_SEV), `codeHash` is a real measured hash (not the simulated `0x194844cf…`), and `extensionId`/`initialOwner` match `config/extension.env`. If the `FlareTeeManager` diamond is redeployed, all registrations are wiped — re-run pre-build for a fresh `EXTENSION_ID`, have the VM operator restart with the new ID, then re-run post-build and test.
+**Real testnet** adds: a funded deployer key (Coston2 faucet), a publicly reachable proxy URL (any HTTPS tunnel to port `6674` — e.g. ngrok or cloudflared), indexer-DB credentials for the proxy, and a GCP Confidential Space VM to run the image. Verify the deploy by curling the proxy `/info` and confirming `machineData`: `platform` starts with `0x4743505f414d445f534556…` (GCP_AMD_SEV), `codeHash` is a real measured hash (not the simulated `0x194844cf…`), and `extensionId`/`initialOwner` match `config/extension.env`. If the `FlareTeeManager` diamond is redeployed, all registrations are wiped — re-run pre-build for a fresh `EXTENSION_ID`, have the VM operator restart with the new ID, then re-run post-build and test.
 
 ### Common failure modes
 

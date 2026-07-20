@@ -1,8 +1,10 @@
-# FAssets Minting Guide
+# FAssets Minting Guide (legacy collateral-reservation flow)
 
-Complete guide for minting FAssets (e.g. FXRP) on the Flare network. Minting wraps underlying tokens like XRP into ERC-20 FAssets for use within Flare's DeFi ecosystem.
+> **Archived.** This guide documents the **legacy collateral-reservation** minting flow (`reserveCollateral` → agent payment → `executeMinting`). The standard FXRP minting path is now a single XRPL payment to the Core Vault — see [direct-minting-guide.md](direct-minting-guide.md) and the [Mint FXRP](https://dev.flare.network/fassets/developer-guides/fassets-mint) developer guide. This page is kept for reference and historical integrations.
 
-**Sources:** [Mint FAssets](https://dev.flare.network/fassets/developer-guides/fassets-mint) | [Mint with Executor](https://dev.flare.network/fassets/developer-guides/fassets-mint-executor)
+Complete guide for the legacy collateral-reservation minting of FAssets (e.g. FXRP) on the Flare network. Minting wraps underlying tokens like XRP into ERC-20 FAssets for use within Flare's DeFi ecosystem.
+
+**Source:** [Standard Minting (Archived)](https://dev.flare.network/fassets/standard-minting)
 
 ## Prerequisites
 
@@ -168,7 +170,7 @@ Direct minting is subject to rate limits (hourly/daily caps, large-mint delays) 
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md) — full walkthrough including destination tag vs memo encoding, `MintingTagManager`, executor restrictions, rate limiting, and operational parameters.
 
-**Official doc:** [FAssets Direct Minting](https://dev.flare.network/fassets/direct-minting)
+**Official doc:** [FAssets Minting](https://dev.flare.network/fassets/minting)
 
 ## Post-Minting
 

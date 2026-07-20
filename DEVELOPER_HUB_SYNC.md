@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `01146a9b876ccb596b7da2c3d6f3e15dd0b797e6`
-- **Date:** 2026-07-06
-- **Subject:** `feat(docs): fassets direct mint troubleshooting guide (#1442)`
+- **Commit:** `718cca3a87cd84db9e092b110b64ff44ea56577a`
+- **Date:** 2026-07-20
+- **Subject:** `Merge branch 'docs/fxrp-oft-katana-deployment' into 'main'`
 
 ## How to sync next time
 
