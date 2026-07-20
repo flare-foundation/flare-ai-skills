@@ -29,7 +29,7 @@
  *
  * Usage: npx ts-node scripts/direct-mint-fxrp.ts
  *
- * See: https://dev.flare.network/fassets/developer-guides/fassets-direct-minting
+ * See: https://dev.flare.network/fassets/developer-guides/fassets-mint
  */
 
 import { Contract, JsonRpcProvider, isAddress } from "ethers";

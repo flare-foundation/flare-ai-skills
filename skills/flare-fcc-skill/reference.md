@@ -4,9 +4,11 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Flare Developer Hub (FCC)
 
-- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development (not yet a fully public production system), but you can already build Flare Compute Extensions.
+- [Build Your First Extension (Getting Started)](https://dev.flare.network/fcc/guides/getting-started) — Hello World scaffold walkthrough: instruction lifecycle, the files you own, OPType/OPCommand customization, and deploying/testing on Coston2. Start here.
 - [Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with ngrok, end-to-end test, troubleshooting, and cleanup
-- [Weather Insurance Extension Guide](https://dev.flare.network/fcc/guides/weather-insurance-extension) — Full FCC application: parametric rainfall insurance, ECIES-encrypted private policies, settlement via OpenWeatherMap data, Next.js frontend
+- [Weather Insurance Extension Guide](https://dev.flare.network/fcc/guides/weather-insurance-extension) — Full FCC application: parametric rainfall insurance, ECIES-encrypted private policies, settlement via OpenWeatherMap data, Next.js frontend. Prerequisites: Docker Desktop, Foundry, Go, an HTTPS tunnel (ngrok or cloudflared) to port 6674, an OpenWeatherMap API key, and a funded Coston2 wallet.
+- [FCC Whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf) — "Flare Confidential Compute: Powering Interoperability for Flare through TEEs" (Jul 6, 2026): the FCC mechanism, Protocol Managed Wallets, Flare Compute Extensions, and FDC2
 
 ## Reference Repositories
 
