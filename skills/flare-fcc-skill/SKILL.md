@@ -57,7 +57,7 @@ Two protocol contracts (from `flare-smart-contracts-v2`) front the system:
 
 - **`TeeExtensionRegistry`** — the registry of extensions and the only path to submit instructions. Key surface:
   - `sendInstructions(address[] _teeIds, TeeInstructionParams _params) payable returns (bytes32 instructionId)` — the single entry point. `TeeInstructionParams` = `{ bytes32 opType; bytes32 opCommand; bytes message; address[] cosigners; uint64 cosignersThreshold; address claimBackAddress; }`.
-  - `extensionsCounter()` and `getTeeExtensionInstructionsSender(uint256 extensionId)` — used to discover an extension's ID.
+  - `nextPublicExtensionId()` and `getTeeExtensionInstructionsSender(uint256 extensionId)` — used to discover an extension's ID. Public extension IDs start at `0x10000` (65536); IDs below that are reserved for system extensions, so `setExtensionId()` scans from `0x10000` up to `nextPublicExtensionId()`, not from zero.
   - **Access control:** when you register an extension you bind it to one **InstructionSender address**. The registry rejects any `sendInstructions` call whose `msg.sender` isn't that address — no EOA, no other contract.
 - **`TeeMachineRegistry`** — maps extensions to the TEE machines serving them. `getRandomTeeIds(uint256 _extensionId, uint256 _count)` picks machine addresses to route an instruction to (use `_count > 1` to fan one instruction out to multiple TEEs).
 
@@ -65,7 +65,7 @@ Two protocol contracts (from `flare-smart-contracts-v2`) front the system:
 
 This is **your** contract and the only address allowed to submit instructions for your extension. Minimum requirements:
 
-1. **Know its extension ID** — to look up serving TEE machines. The scaffold's `setExtensionId()` scans the registry after registration and caches the ID (set-once).
+1. **Know its extension ID** — to look up serving TEE machines. The scaffold's `setExtensionId()` scans the registry (starting at `0x10000`, the first public extension ID) after registration and caches the ID (set-once).
 2. **Call `sendInstructions` on `TeeExtensionRegistry`** with at least one `teeId`, the `opType`/`opCommand` `bytes32` identifiers, a non-empty `message`, and (usually empty) cosigners.
 3. **Be `payable` and forward `msg.value`** — the registry charges a per-instruction fee.
 4. **Exist before registration** — you register by passing the deployed InstructionSender address.
@@ -215,7 +215,7 @@ Simulated TEE: `codeHash` = `0x194844cf…`, `extensionId` matches `config/exten
 ```bash
 ./scripts/post-build.sh
 ```
-Runs `allow-tee-version` (whitelists code hash) and `register-tee -command rRap` (registers the machine, issues fresh attestation, runs FTDC check, promotes to production).
+Runs three onchain steps: `allow-tee-version` (whitelists code hash), `set-governance` (registers the extension's TEE governance signer set/threshold — defaults to the deployer as sole signer with threshold 1 unless you set `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` in `.env`), and `register-tee -command rRap` (registers the machine, issues fresh attestation, runs FTDC check, promotes to production). The governance set must match what the `extension-tee` node container was given, or registration reverts with `InvalidGovernanceHash`.
 
 **Step 8 — Run end-to-end test:**
 ```bash
@@ -291,20 +291,21 @@ Then restart from Step 0. Note: on-chain state (deployed contracts, registered e
 - **Transaction reverts** — insufficient C2FLR; use the [Coston2 faucet](https://faucet.flare.network/coston2).
 - **`MachineManager.TooMany()`** — `config/extension.env` extension ID doesn't match the on-chain TEE record (usually after `pre-build.sh --force`). Do a full reset or keep the existing `extension.env` and re-run only `post-build.sh` + `test.sh`.
 - **`Verification.ChallengeExpired`** — re-run `post-build.sh`.
+- **`InvalidGovernanceHash`** — the `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` used by `set-governance` don't match the governance hash signed by the TEE node; leave both unset for the default deployer-only setup, or ensure `.env` and the node container agree, then re-run `post-build.sh`.
 - **`code hashes do not match`** — `SIMULATED_TEE` and container `MODE` disagree; use `SIMULATED_TEE=true` with `MODE=1` (injected by Docker Compose).
 - **TEE registration times out** — try `docker compose restart ext-proxy`; FDC attestation requires active relay providers on Coston2.
 - **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart the ngrok tunnel if needed (`ngrok http 6674`), restart Docker stack, re-run `post-build.sh` and `test.sh`.
 
 ## fce-weather-insurance: Parametric Insurance Example
 
-The `fce-weather-insurance` repo is a full FCC application: **parametric rainfall insurance** settled from OpenWeatherMap data inside the enclave. It shows the pattern for TEE workloads that fetch off-chain data, sign a result, and have an on-chain contract verify that signature before moving funds — the same shape as any oracle-backed settlement.
+The `fce-weather-insurance` repo is a full FCC application: **parametric rainfall insurance** settled from OpenWeatherMap data inside the enclave. It shows the pattern for TEE workloads that fetch off-chain data, sign a result, and have an on-chain contract verify that signature before moving funds — the same shape as any oracle-backed settlement. See [flare-foundation/fce-weather-insurance-x402-agent](https://github.com/flare-foundation/fce-weather-insurance-x402-agent) for an AI agent that buys and settles policies against this extension using [x402 payments](https://dev.flare.network/fxrp/token-interactions/x402-payments).
 
 ### Flow
 
 1. A policyholder buys rainfall cover for a date + location, paying an ERC-20 premium (`payToken`); the contract reserves the payout from pool liquidity.
 2. From `settlementUnlockAt` (00:00 UTC the day after the coverage date), a keeper calls `requestSettlement`, which routes a `WEATHER`/`SETTLE` instruction to the extension.
 3. The extension fetches that day's precipitation from OpenWeatherMap **inside the enclave** and signs the settlement result.
-4. Anyone calls `settle()` with the signed `ActionResult`; the contract `ecrecover`s the signer, requires it equals the registered `teeAddress`, and pays out if the rainfall threshold was met.
+4. Anyone calls `settle()` with the signed `ActionResult`; the contract wraps the result hash in a domain-separated payload, `ecrecover`s the signer, requires it equals the registered `teeAddress`, and pays out if the rainfall threshold was met.
 
 ### OP identifiers (`OP_TYPE_WEATHER = bytes32("WEATHER")`)
 
@@ -328,11 +329,13 @@ Both `relayPrivateBuy` and `settle` verify the TEE result the same way: reconstr
 ```solidity
 bytes32 resultHash = keccak256(abi.encodePacked(
     keccak256(_resultData), _actionId, keccak256(bytes(_submissionTag)), _status));
-address signer = _recover(_ethSigned(resultHash), _signature); // EIP-191 personal-sign
+// Domain-separated payload — must match go-flare-common signing.TEEActionResult
+bytes32 payloadHash = keccak256(abi.encode(bytes32("TEE_ACTION_RESULT"), block.chainid, resultHash));
+address signer = _recover(_ethSigned(payloadHash), _signature); // EIP-191 personal-sign
 require(signer == teeAddress, "bad TEE signature");
 ```
 
-The node signs `ActionResult.Hash()` with the EIP-191 prefix; only successful (`status == 1`) results are accepted. `SettlementTime` (a library) computes `settlementUnlockAt` = midnight UTC the day after coverage.
+The node signs `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId, ActionResult.Hash()))` — not `ActionResult.Hash()` alone — with the EIP-191 prefix; only successful (`status == 1`) results are accepted. Verifying against the raw `resultHash` fails against current TEE node signatures. `SettlementTime` (a library) computes `settlementUnlockAt` = midnight UTC the day after coverage.
 
 ### Deploy notes (differ from the scaffold/fce-sign)
 
@@ -349,11 +352,11 @@ The TEE's trust comes from **remote attestation**: the Confidential Space VM mea
 
 ## Deployment Lifecycle (Coston / Coston2)
 
-The scaffold scripts chain four phases (`./scripts/full-setup.sh --test` runs all of them; each can run individually):
+The scaffold scripts chain four phases (`./scripts/full-setup.sh --chain coston2 --test` runs all of them in one shot; each can also run individually):
 
-1. **pre-build** (`pre-build.sh`) — compile + deploy the `InstructionSender`, register the extension on `TeeExtensionRegistry`, write `EXTENSION_ID` + `INSTRUCTION_SENDER` to `config/extension.env`.
+1. **pre-build** (`pre-build.sh`) — compile + deploy the `InstructionSender`, register the extension on `TeeExtensionRegistry`, write `EXTENSION_ID` + `INSTRUCTION_SENDER` to `config/extension.env`. Re-running reuses an existing `config/extension.env` rather than refusing to run; pass `--force` only when you intentionally want a new extension.
 2. **start services** (`docker compose up -d --build`) — run `redis`, the `ext-proxy`, and the `extension-tee` (your code) as containers. Locally `LOCAL_MODE=true` skips attestation.
-3. **post-build** (`post-build.sh`) — `allow-tee-version` whitelists the code hash, then `register-tee` registers the TEE machine on-chain. Use `register-tee -command rRap` so re-runs issue a fresh attestation challenge (capital `R`) and avoid `Verification.ChallengeExpired`.
+3. **post-build** (`post-build.sh`) — `allow-tee-version` whitelists the code hash, `set-governance` registers the extension's TEE governance signer set/threshold (defaults to the deployer with threshold 1 unless `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` are set), then `register-tee` registers the TEE machine on-chain. Use `register-tee -command rRap` so re-runs issue a fresh attestation challenge (capital `R`) and avoid `Verification.ChallengeExpired`.
 4. **test** (`test.sh`) — send instructions through the deployed TEE and verify the round-trip.
 
 **Real testnet** adds: a funded deployer key (Coston2 faucet), a publicly reachable proxy URL (any HTTPS tunnel to port `6674` — e.g. ngrok or cloudflared), indexer-DB credentials for the proxy, and a GCP Confidential Space VM to run the image. Verify the deploy by curling the proxy `/info` and confirming `machineData`: `platform` starts with `0x4743505f414d445f534556…` (GCP_AMD_SEV), `codeHash` is a real measured hash (not the simulated `0x194844cf…`), and `extensionId`/`initialOwner` match `config/extension.env`. If the `FlareTeeManager` diamond is redeployed, all registrations are wiped — re-run pre-build for a fresh `EXTENSION_ID`, have the VM operator restart with the new ID, then re-run post-build and test.
@@ -362,6 +365,7 @@ The scaffold scripts chain four phases (`./scripts/full-setup.sh --test` runs al
 
 - **`Verification.TeeNotFound`** — `NORMAL_PROXY_URL` points at the wrong chain's FTDC proxy.
 - **`Verification.ChallengeExpired`** — re-run post-build; ensure `register-tee` uses `-command rRap`.
+- **`InvalidGovernanceHash`** — `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` don't match the governance hash the TEE node signed; leave unset for deployer-only defaults, or align both sides and re-run post-build.
 - **`code hashes do not match`** — `SIMULATED_TEE` and the image's `MODE` disagree; both must be "real" (`SIMULATED_TEE=false`, `MODE=0`).
 - **`connect: connection refused` from ext-proxy** — VPN/route to Flare's indexer DB is down.
 

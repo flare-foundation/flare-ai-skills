@@ -26,6 +26,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [Cross-Chain Redeem to Tag](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts) — Redeem FXRP with a destination tag for exchange addresses
 - [Recover Stuck Mint Transaction](https://dev.flare.network/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts) — Recover FXRP when a smart-account direct mint reverted or was never finalized, using the `0xE0` skip-memo flow ([`recover-direct-mint-transaction.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/recover-direct-mint-transaction.ts))
 - [Fast-Forward Nonce](https://dev.flare.network/smart-accounts/guides/typescript-viem/fast-forward-nonce-ts) — Advance a stuck memo-instruction nonce after `0xE0` recovery skipped the original user operation, using the `0xE1` opcode ([`fast-forward-nonce.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fast-forward-nonce.ts))
+- [Control USDT0](https://dev.flare.network/smart-accounts/guides/typescript-viem/control-usdt0-ts) — Read USDT0 balance, transfer, and swap USDT0 for FXRP on SparkDEX from a personal account using fee-only `0xFE` custom instructions (`netMintAmountXrp: 0`, no FXRP minted) ([`src/usdt0`](https://github.com/flare-foundation/flare-viem-starter/tree/main/src/usdt0))
 
 ## CLI Repository
 

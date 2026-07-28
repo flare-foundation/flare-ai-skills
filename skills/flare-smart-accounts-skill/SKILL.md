@@ -332,6 +332,18 @@ const userOp = {
 
 See [Custom Instruction Comparison](https://dev.flare.network/smart-accounts/custom-instruction-comparison) for a detailed trade-off guide.
 
+### Moving ERC-20 balances without minting: fee-only custom instructions
+
+A personal account can already hold ERC-20 balances (e.g. USDT0) unrelated to FXRP minting. To transfer or swap that balance, build a `0xFE` custom instruction with `netMintAmountXrp: 0` — the XRPL payment covers only the direct-minting fee and executor fee, so `executeDirectMintingWithData` dispatches the user operation without minting any FXRP:
+
+```typescript
+const memoOnlyAmountXrp = await computeDirectMintingPaymentAmountXrp({
+  netMintAmountXrp: 0,
+});
+```
+
+The rest of the flow is the same three-step `0xFE` protocol: encode the `Call[]` batch (e.g. `USDT0.transfer(recipient, amount)`, or `approve` + SparkDEX `exactInputSingle` to swap USDT0 → FXRP), commit `keccak256(PackedUserOperation)` in the 42-byte memo, send the fee-only XRPL payment, then have the executor fetch an FDC proof and call `executeDirectMintingWithData`. See the [Control USDT0 guide](https://dev.flare.network/smart-accounts/guides/typescript-viem/control-usdt0-ts) for the full runnable example (balance check, transfer, and swap scripts) built on the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter).
+
 ## Failure Handling & Recovery
 
 The `0xFE` / `0xFF` direct-minting-with-custom-instruction flow is atomic on the Flare side. When `executeDirectMintingWithData` (or `executeDirectMinting` for `0xFF`) reverts, the whole Flare transaction rolls back:
