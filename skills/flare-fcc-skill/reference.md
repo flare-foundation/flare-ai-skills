@@ -29,12 +29,13 @@ Use these links for official docs, source repositories, contract surfaces, and t
 ## Weather Insurance Extension
 
 - [flare-foundation/fce-weather-insurance](https://github.com/flare-foundation/fce-weather-insurance) — Full FCC application: parametric rainfall insurance using OpenWeatherMap data inside a TEE. Includes Go handler, `WeatherInsurance.sol`, ECIES-encrypted private policies, and a Next.js frontend.
+- [flare-foundation/fce-weather-insurance-x402-agent](https://github.com/flare-foundation/fce-weather-insurance-x402-agent) — AI agent showcase: buys and settles weather insurance policies against the extension above using [x402 payments](https://dev.flare.network/fxrp/token-interactions/x402-payments).
 
 ## Contract Interfaces
 
 These ship as minimal local interfaces in the scaffold and are slated to move into `flare-smart-contracts-v2` once published as a package:
 
-- [`ITeeExtensionRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeExtensionRegistry.sol) — `sendInstructions(address[] teeIds, TeeInstructionParams params)`, `extensionsCounter()`, `getTeeExtensionInstructionsSender(uint256)`
+- [`ITeeExtensionRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeExtensionRegistry.sol) — `sendInstructions(address[] teeIds, TeeInstructionParams params)`, `nextPublicExtensionId()` (public extension IDs start at `0x10000`), `getTeeExtensionInstructionsSender(uint256)`
 - [`ITeeMachineRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeMachineRegistry.sol) — `getRandomTeeIds(uint256 extensionId, uint256 count)`
 - [`InstructionSender.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/InstructionSender.sol) — Reference on-chain entry point (`HelloWorldInstructionSender`)
 
