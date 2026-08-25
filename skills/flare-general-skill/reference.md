@@ -82,7 +82,7 @@ Full directory: [dev.flare.network/network/developer-tools](https://dev.flare.ne
 - [Dune](https://dune.com/flare/flare-network-overview) — Onchain data analytics
 - [Sentora](https://sentora.com/research/dashboards/flare-defi-ecosystem) — DeFi intelligence platform
 - [Arkham Intel](https://intel.arkm.com/explorer/entity/flare-network) — Onchain wallet analytics
-- [Flare Metrics](https://flaremetrics.io/defi) — DeFi opportunity tracker
+- [Flare Metrics](https://flaremetrics.io/fassets) — FTSO, validator, FAssets, staking, and rewards analytics
 - [Catenalytica](https://catenalytica.com) — FTSO performance and network monitoring
 - [FlareBase](https://flare-base.io/flare) — Web and REST APIs for Flare data
 

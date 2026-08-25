@@ -19,7 +19,7 @@ Use these links for official docs, source repositories, contract surfaces, and t
 - [fce-extension-scaffold README](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/README.md) — Repo structure, env vars, ports, local + Coston2 deployment walkthroughs
 - [Extension Development Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-guide.md) — How an extension works, architecture, the files you modify, the action-handler pattern, data flow
 - [InstructionSender Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/instruction-sender.md) — On-chain entry point requirements, scaffold contract, writing a custom sender
-- [Types Server Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/types-server.md) — Decoding instruction data, registering decoders, the `/decode` API
+- [Extension Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-contract.md) — Decoding instruction data (`DataFixed`), the on-chain contract surface
 - [Testing Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/testing.md) — Writing and running extension tests
 - [Making It Your Own](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/manual-setup.md) — Renaming the Hello World placeholders
 - [Deployment Steps](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/deployment-steps.md) — Linear Coston/Coston2 deploy recipe
