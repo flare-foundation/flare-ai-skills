@@ -102,6 +102,14 @@ If the agent fails to pay within the timeframe, the redeemer can trigger a defau
 
 **Guide:** [Redemption Defaults](https://dev.flare.network/fassets/developer-guides/fassets-redemption-default)
 
+### When the Agent's Payment Is Blocked or Invalid (Agent Keeps Collateral + Underlying)
+
+If the agent's payment attempt fails for a reason attributable to the **redeemer**, the agent can request a proof from the Flare Data Connector and present it to the FAssets system to fulfill its obligation without paying — the agent keeps both the collateral and the underlying:
+- **Proof of invalid address** — the redeemer's underlying address has a syntax/checksum error.
+- **Proof of blocked payment** — the address is valid but the underlying chain still rejects the payment. The common XRP case: the redeemer enabled `asfRequireDest` on their XRPL account but submitted a plain `redeem`/`redeemAmount` request instead of [`redeemWithTag`](#redeem-with-tag) — incoming payments then require a destination tag that a plain redemption never carries, so the XRPL rejects the agent's payment. **Redeemers who have `asfRequireDest` set must use `redeemWithTag`.**
+
+The agent must still attempt the payment before requesting either proof.
+
 ## Redemption Queue
 
 FAssets uses a redemption queue (redemption ticket system) to track pending redemptions. You can query the queue to see total pending redemption value and lots.

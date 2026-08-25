@@ -37,7 +37,8 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [FAsset Auto-Redeem](https://dev.flare.network/fxrp/oft/fxrp-autoredeem)
 - [Get FXRP Token Address](https://dev.flare.network/fxrp/token-interactions/fxrp-address)
 - [FXRP Omnichain Fungible Token (OFT)](https://dev.flare.network/fxrp/oft) — LayerZero OFT overview, DVN security stack (LayerZero Labs, Nethermind, Canary, Horizen), and current deployment addresses (OFT Adapter on Flare; native OFT on HyperEVM, HyperCore, Ethereum Mainnet, Base, BNB Smart Chain, Monad, Katana — plus Coston2/Hyperliquid testnet)
-- [Auto Minting and Bridging FXRP](https://dev.flare.network/fxrp/oft/fxrp-automint) — mint FXRP from XRP and bridge it to another chain in one flow via LayerZero OFT
+- [Bridge FXRP to Ethereum](https://dev.flare.network/fxrp/oft/fxrp-bridge-ethereum) — move FXRP you already hold from Coston2 to Sepolia: approve the OFT Adapter, then `send()`, using Viem (no Smart Account or minting step)
+- [Auto Minting and Bridging FXRP](https://dev.flare.network/fxrp/oft/fxrp-automint) — mint FXRP from an XRPL payment and bridge it to another chain atomically in one flow, via a [Smart Accounts Custom Instruction (`0xFE`)](../flare-smart-accounts-skill/SKILL.md) that calls the OFT Adapter directly (no bridge-shim contract)
 - **Skill script:** [scripts/get-fxrp-address.ts](scripts/get-fxrp-address.ts) — get FXRP address at runtime (FlareContractsRegistry → AssetManagerFXRP → fAsset())
 - **Skill script:** [scripts/get-fassets-settings.ts](scripts/get-fassets-settings.ts) — read lot size, decimals, and XRP/USD price via FTSOv2
 - **Skill script:** [scripts/list-agents.ts](scripts/list-agents.ts) — list all available FAssets agents with fees and free collateral

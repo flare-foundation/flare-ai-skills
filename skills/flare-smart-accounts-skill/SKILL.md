@@ -367,6 +367,10 @@ Any validation/execution failure inside `handleMintedFAssets` reverts the whole 
 
 For direct-minting-side errors (rate limits, wrong recipient, unrecognized memo routing to the smart account manager), see the [Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting#smart-account-path) guide's Smart Account Path section.
 
+**"My XRPL transaction succeeded but the instruction never executed"** — two common causes account for most of these:
+- **The personal account has no funds.** A custom instruction that sends value out of the personal account (e.g. a LayerZero fee) reverts if that account's native balance is empty, even though the XRPL payment itself looks successful. Fund the personal account address (not the EOA) from the [Coston2 faucet](https://faucet.flare.network/coston2) before running the script — see [State Lookup](https://dev.flare.network/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) for deriving that address.
+- **You're looking at the wrong transaction.** `MasterAccountController` is the entry point, so the dispatched call runs as an **internal transaction** on the personal account, not a top-level transaction from your own EOA. Check the personal account's internal transactions on the block explorer, not just its top-level transaction list.
+
 ### Recovery after a failed / stuck mint
 
 If the mint reverted (or the executor never submitted the proof) and the stuck transaction ID is not yet used on-chain (`isTransactionIdUsed` returns `false`), the user recovers FXRP **without** running the original user operation:

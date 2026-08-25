@@ -21,7 +21,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [State Lookup](https://dev.flare.network/smart-accounts/guides/typescript-viem/state-lookup-ts) — Reading smart account state from Flare chain
 - [Custom Instruction](https://dev.flare.network/smart-accounts/guides/typescript-viem/custom-instruction-ts) — Hash-based custom instruction (`0xFE`) using Viem
 - [Memo Field Custom Instruction](https://dev.flare.network/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts) — Inline custom instruction (`0xFF`) using Viem
-- [Cross-Chain Mint](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) — Mint FXRP from XRP and bridge to Sepolia via LayerZero in a single flow
+- [Cross-Chain Mint](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) — Mint FXRP from XRP and bridge to Sepolia via LayerZero in a single XRPL payment using the `0xFE` Custom Instruction; the batch calls the FXRP OFT Adapter directly (no bridge shim contract)
 - [Cross-Chain Redeem](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts) — Redeem FXRP back to XRP with cross-chain flows
 - [Cross-Chain Redeem to Tag](https://dev.flare.network/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts) — Redeem FXRP with a destination tag for exchange addresses
 - [Recover Stuck Mint Transaction](https://dev.flare.network/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts) — Recover FXRP when a smart-account direct mint reverted or was never finalized, using the `0xE0` skip-memo flow ([`recover-direct-mint-transaction.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/recover-direct-mint-transaction.ts))
@@ -40,6 +40,7 @@ Use these when you need detailed specs, contract ABIs, or step-by-step developer
 - [FXRP Overview](https://dev.flare.network/fxrp/overview) — FXRP architecture, mint/redeem paths
 - [FAssets Minting](https://dev.flare.network/fassets/minting) — Minting flow, fees, payment deadlines
 - [FAssets Redemption](https://dev.flare.network/fassets/redemption) — Redemption flow and agent payouts
+- [Bridge FXRP to Ethereum](https://dev.flare.network/fxrp/oft/fxrp-bridge-ethereum) — Plain wallet-to-wallet FXRP bridging (Coston2 → Sepolia) via the OFT Adapter, no personal account or custom instruction involved — use this instead of Cross-Chain Mint when FXRP is already held and only needs to move chains
 
 ### Supporting Protocols
 

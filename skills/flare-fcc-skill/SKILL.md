@@ -84,6 +84,23 @@ The contract and the extension code are linked by a two-level identifier that **
 
 `OPType` selects an operation group; `OPCommand` sub-routes within it. A mismatched `OPType` falls through to "unsupported op type"; a mismatched `OPCommand` to "unsupported op command". `bytes32("...")` only holds up to 31 bytes — keep identifiers short.
 
+**Reserved names:** the `F_` prefix on `OPType` is reserved for Flare system operations (`F_REG`, `F_WALLET`, `F_GET`, `F_POLICY`, `F_GOVERNANCE`, `F_XRP`, `F_BTC`, `F_FDC2`) — never prefix your own `OPType` with `F_`. Their command names are reserved too (`TEE_ATTESTATION`, `TEE_INFO`, `TEE_BACKUP`, `KEY_GENERATE`, `KEY_INFO`, `KEY_PROOF`, `KEY_DELETE`, `KEY_DIRECT_BACKUP`, `KEY_DIRECT_RESTORE`, `KEY_DATA_PROVIDER_RESTORE`, `INITIALIZE_POLICY`, `UPDATE_POLICY`, `SET_MACHINE_PATH_LIST`, `PAY`, `REISSUE`, `VRF`, `PROVE`) — reusing one of these command names under your own non-`F_` `OPType` passes local validation silently but the instruction never reaches your extension (no error at all), so pick domain-specific names for both.
+
+## TEE Keys and the Signing Model
+
+Each TEE machine generates an **identity key pair** at boot (ECDSA on secp256k1, matching Ethereum-style keys). The private half never leaves the enclave.
+
+- **Public key** — verifiable identity; can live on-chain or be served from the proxy `/info` endpoint. Anyone can **verify** ECDSA signatures and **encrypt** ECIES payloads to it.
+- **Private key** — enclave-only. Used to **sign** results (ECDSA) and **decrypt** payloads (ECIES) sent to that machine.
+
+**ECDSA** proves origin (a stamp on a public message); **ECIES** hides content (a lockbox only the matching private key opens). Do not confuse the two — encrypting with the private key is backwards.
+
+Pattern for secrets: **encrypt off-chain to the TEE's public key, decrypt only inside the enclave.** The extension does not hold the identity private key itself — it calls the TEE node locally (`POST /decrypt` on the sign port, localhost-only) and the node decrypts using the enclave-held key. Encryption hides bytes; it does not replace the consensus check below.
+
+**Data providers and cosigners** gate who may make the TEE do work at all. An on-chain instruction only runs after [Flare Systems Protocol](https://dev.flare.network/network/fsp) data providers relay and **sign** it with **more than 50% of the current signing-policy weight** (the same weighted set backing FTSO/FDC) — a proxy cannot authorize work on its own. **Cosigners** add a second, independent authorization gate for sensitive operations (payments, key administration): both stamps — provider weight and cosigner threshold — must be present or the TEE does not execute.
+
+See [TEE public and private keys](https://dev.flare.network/fcc/tee-keys) and [Data providers and cosigners](https://dev.flare.network/fcc/data-providers) for the full mechanism.
+
 ## The Extension (Go) — Action Handler
 
 Inside the TEE, the extension is an HTTP server. The TEE node delivers each instruction as `POST /action`. You implement `processAction`, which parses `instruction.DataFixed` (carrying `OPType`, `OPCommand`, and the raw `OriginalMessage`) out of the action and routes on `OPType`, then on `OPCommand`.
@@ -368,6 +385,16 @@ The scaffold scripts chain four phases (`./scripts/full-setup.sh --chain coston2
 - **`InvalidGovernanceHash`** — `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` don't match the governance hash the TEE node signed; leave unset for deployer-only defaults, or align both sides and re-run post-build.
 - **`code hashes do not match`** — `SIMULATED_TEE` and the image's `MODE` disagree; both must be "real" (`SIMULATED_TEE=false`, `MODE=0`).
 - **`connect: connection refused` from ext-proxy** — VPN/route to Flare's indexer DB is down.
+
+### Deeper troubleshooting (dedicated guide: [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting))
+
+Most failures are a local stack drifted from the current on-chain deployment or a registered URL that no longer resolves — check these before assuming the network is at fault:
+
+- **TEE never reaches production** (availability check `404`s indefinitely, empty machine queue, `getRandomTeeIds` returns nothing, callers revert with `TooMany()`): read back what you actually registered with the scaffold's `query-tee` tool — `go run ./tools/cmd/query-tee -reg <FlareTeeManager address> <your TEE id>` (take the registry address from `config/coston2/deployed-addresses.json`, not the tool's built-in default). Compare the registered `url` character-by-character with what you're serving now — quick tunnels (ngrok/Cloudflare quick tunnels) mint a new hostname on every restart, so a restarted tunnel silently orphans the on-chain registration. Use a **named** Cloudflare tunnel or a reserved ngrok domain instead. An empty `teeId` from `query-tee` means you're talking to a different deployment than you think — pull latest `main`, take every address fresh from `config/coston2/deployed-addresses.json`, and re-run pre-build/post-build (a redeploy wipes existing registrations).
+- **Proxy panics on startup or rejects TEE responses** (`hex string without 0x prefix`, `verifying response signature: invalid signature`, `error signing: could not sign`): version skew between `tee-node` and `tee-proxy` — their wire format changes while FCC is in development. Never bump one side alone; the Go module pin and `proxy/Dockerfile`'s `TEE_PROXY_VERSION` must move together, and building from on-disk local siblings (rather than the pinned versions) is what usually introduces the skew.
+- **Instructions never reach your extension despite an instruction ID and no other errors** — you likely reused a reserved `F_`-prefixed `OPType` or one of the reserved command names above under a custom `OPType`; this passes local pair validation with **no error**, so the instruction is just silently not delivered.
+- **Indexer DB auth/connection fails** (`Access denied for user 'indexer-reader'`, timeouts against a VPN-only host) — credentials in older docs/repos have been rotated and the VPN-only host they list is Coston's, not Coston2's. Target **Coston2** (no VPN required) and request current read-only credentials via [technical support](https://flare.network/resources/technical-support) or [X](https://x.com/FlareDevs).
+- Include your extension ID, TEE machine address, failing instruction ID, and `query-tee` output when asking for help — those four details usually identify the cause immediately.
 
 ## When to Use a Different Skill
 

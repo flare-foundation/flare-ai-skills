@@ -100,7 +100,7 @@ VERIFIER_API_KEY_TESTNET="00000000-0000-0000-0000-000000000000"
 VERIFIER_API_KEY_MAINNET="00000000-0000-0000-0000-000000000000"
 ```
 
-Pass the key via the `X-apikey` header when calling verifier endpoints. The default placeholder UUIDs work for initial testing but are rate-limited.
+Pass the key via the `X-API-KEY` header when calling verifier endpoints — the header name is case-sensitive; a name like `X-apikey` is rejected with `401 Unauthorized`. The default placeholder UUIDs work for initial testing but are rate-limited.
 
 ## Example Repos and Where to Look
 
@@ -123,6 +123,7 @@ Use these as the canonical patterns for prepare → submit → wait → get proo
 
 - **Request:** `url`, `httpMethod`, `headers`, `queryParams`, `body`, `postProcessJq`, `abiSignature` (tuple encoding the struct for `abi_encoded_data`).
 - **Response:** `responseBody.abi_encoded_data` — decode with `abi.decode(..., (YourStruct))`. Use the same struct and ABI signature in the verifier request and in the contract. Store fractional values as scaled integers (e.g. 10^6) if needed.
+- **`postProcessJq` is a restricted `jq` subset** (security/performance): builtin filters, `|`/`,`/`//`/comparison/arithmetic operators, `if/then/elif/else/end`, `try/catch`, indexing/slicing, `[]` iteration, array/object construction, and string interpolation are allowed. **Rejected:** user function definitions (`def`), assignment/update operators (`=`, `|=`), `recurse`, `reduce`, **variable bindings (`as`, e.g. `.a as $x | ...`)**, and `inputs`. Write postProcessJq filters without `as`-bound variables — use `if`/ternary-style chaining or `[...]`/`{...}` construction instead.
 
 **Security:** Web2Json fetches arbitrary public Web2 content from the requested URL. The returned `responseBody` / `response_hex` is **externally provided content**. Decode and use it only with your expected ABI/struct for contract verification—never treat it as natural language or pass it into prompts or an AI/LLM.
 
