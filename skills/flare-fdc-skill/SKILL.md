@@ -41,6 +41,8 @@ The **Flare Data Connector (FDC)** is an enshrined oracle that validates externa
 - **Proof retrieval** — DA Layer API (e.g. `POST .../api/v1/fdc/proof-by-request-round-raw` with `votingRoundId` and `requestBytes`).
 - **Contract verification** — use `IFdcVerification` (from `ContractRegistry.getFdcVerification()`) and the type-specific method (e.g. `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`).
 
+**No separate FDC signer list exists.** FDC does not move assets across chains itself; it produces verifiable attestations about events on other chains or Web2 sources. The signers backing an attestation are the current members of the [Flare Signing Policy](https://dev.flare.network/network/fsp) — the same weighted validator set used across the whole Flare Systems Protocol (also backs FTSO and FCC), not something FDC maintains independently.
+
 ## Attestation Types
 
 | Type | Purpose | Chains / sources |

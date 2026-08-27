@@ -4,7 +4,8 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Flare Developer Hub (FCC)
 
-- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development (not yet a fully public production system), but you can already build Flare Compute Extensions.
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development, available on Coston2 and Coston today, and coming to other Flare networks soon.
+- [FCC Reference](https://dev.flare.network/fcc/reference) — Solidity ABI reference for the `FlareTeeManager` diamond and its facets: [`IFlareTeeManager`](https://dev.flare.network/fcc/reference/IFlareTeeManager), [`IExtensionManager`](https://dev.flare.network/fcc/reference/IExtensionManager), [`IMachineManager`](https://dev.flare.network/fcc/reference/IMachineManager), [`IVerification`](https://dev.flare.network/fcc/reference/IVerification), [`IOperationFees`](https://dev.flare.network/fcc/reference/IOperationFees), [`IOwnerAllowlist`](https://dev.flare.network/fcc/reference/IOwnerAllowlist), [`ITeeCommonErrors`](https://dev.flare.network/fcc/reference/ITeeCommonErrors)
 - [TEE Public and Private Keys](https://dev.flare.network/fcc/tee-keys) — The per-machine identity keypair, ECDSA (sign/verify) vs ECIES (encrypt/decrypt), and the encrypt-off-chain/decrypt-inside-the-enclave pattern via `POST /decrypt`.
 - [Data Providers and Cosigners](https://dev.flare.network/fcc/data-providers) — How instructions are relayed and signed by the Flare Systems Protocol data-provider set (>50% signing weight) before a TEE executes, and the cosigner gate for sensitive operations.
 - [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting) — `query-tee` diagnostics, stale tunnel URLs, `tee-node`/`tee-proxy` version skew, reserved `F_` operation names, and indexer DB credential issues.
@@ -36,10 +37,10 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Contract Interfaces
 
-These ship as minimal local interfaces in the scaffold and are slated to move into `flare-smart-contracts-v2` once published as a package:
+Onchain, the registry surface lives behind one [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535) diamond, `FlareTeeManager` — see the [FCC Reference](https://dev.flare.network/fcc/reference) link above for the full ABI. The scaffold's local interfaces map to its facets:
 
-- [`ITeeExtensionRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeExtensionRegistry.sol) — `sendInstructions(address[] teeIds, TeeInstructionParams params)`, `nextPublicExtensionId()` (public extension IDs start at `0x10000`), `getTeeExtensionInstructionsSender(uint256)`
-- [`ITeeMachineRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeMachineRegistry.sol) — `getRandomTeeIds(uint256 extensionId, uint256 count)`
+- [`ITeeExtensionRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeExtensionRegistry.sol) — `sendInstructions(address[] teeIds, TeeInstructionParams params)`, `nextPublicExtensionId()` (public extension IDs start at `0x10000`), `getTeeExtensionInstructionsSender(uint256)`; matches the diamond's `IExtensionManager` facet
+- [`ITeeMachineRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeMachineRegistry.sol) — `getRandomTeeIds(uint256 extensionId, uint256 count)`; matches the diamond's `IMachineManager` facet
 - [`InstructionSender.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/InstructionSender.sol) — Reference on-chain entry point (`HelloWorldInstructionSender`)
 
 ## Related Flare Confidential Compute Work

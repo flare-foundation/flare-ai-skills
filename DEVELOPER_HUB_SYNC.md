@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `a6f7208a4f062cbf14d6dbe2ad1f124c6d623d87`
-- **Date:** 2026-08-25
-- **Subject:** `Merge branch 'feat/fcc-keys' into 'main'`
+- **Commit:** `3823d8f069e5447703b8b6e9209840e9f84d8ae7`
+- **Date:** 2026-08-27
+- **Subject:** `Merge branch 'feat/fcc-reference' into 'main'`
 
 ## How to sync next time
 
