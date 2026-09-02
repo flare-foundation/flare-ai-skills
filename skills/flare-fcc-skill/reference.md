@@ -16,7 +16,7 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Reference Repositories
 
-- [flare-foundation/fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold) — Runnable "Hello World" TEE extension (Go): contracts, deploy/registration tooling, types server, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). The starting point for building an extension.
+- [flare-foundation/fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold) — Runnable "Hello World" TEE extension (Go, Python, or TypeScript via `LANGUAGE` in `.env`): contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). The starting point for building an extension.
 - [fce-extension-scaffold README](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/README.md) — Repo structure, env vars, ports, local + Coston2 deployment walkthroughs
 - [Extension Development Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-guide.md) — How an extension works, architecture, the files you modify, the action-handler pattern, data flow
 - [InstructionSender Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/instruction-sender.md) — On-chain entry point requirements, scaffold contract, writing a custom sender
