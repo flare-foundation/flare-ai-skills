@@ -1,6 +1,6 @@
 ---
 name: flare-fcc
-description: Provides domain knowledge and guidance for Flare Confidential Compute (FCC) and TEE extensions—how confidential extensions run inside a Trusted Execution Environment, the on-chain TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, the OPType/OPCommand routing model, the instruction lifecycle, the extension action handler, the types server, attestation, and reproducible builds. Use when building, deploying, or reasoning about Flare confidential extensions, TEE machines, FCC, confidential compute, the fce-extension-scaffold, the fce-sign signing example, the fce-weather-insurance example, Confidential Space VMs, code-hash attestation, parametric insurance on TEE, or registering a TEE on Coston/Coston2.
+description: Provides domain knowledge and guidance for Flare Confidential Compute (FCC) and TEE extensions—how confidential extensions run inside a Trusted Execution Environment, the on-chain TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, the OPType/OPCommand routing model, the instruction lifecycle, the extension action handler, attestation, and reproducible builds. Use when building, deploying, or reasoning about Flare confidential extensions, TEE machines, FCC, confidential compute, the fce-extension-scaffold, the fce-sign signing example, the fce-weather-insurance example, Confidential Space VMs, code-hash attestation, parametric insurance on TEE, or registering a TEE on Coston/Coston2.
 ---
 
 ## Scope and Limitations
@@ -32,7 +32,7 @@ Use FCC when an application needs **confidential state, secret-holding, or off-c
 FCC is in the **final stages of development**. It is available on **Coston2** and **Coston** today and will be available on other Flare networks soon — start with the [Build Your First Extension](https://dev.flare.network/fcc/guides/getting-started) guide (Hello World scaffold walkthrough). For the mechanism in depth, see the [FCC whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
 
 **Reference repos:**
-- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension (Go) with contracts, deploy/registration tooling, a types server, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). This is the starting point for building your own extension; the [Getting Started guide](https://dev.flare.network/fcc/guides/getting-started) walks through it end to end.
+- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension with contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). Implemented in Go, Python, and TypeScript — set `LANGUAGE=go|python|typescript` in `.env` (Go is the default; the contract, scripts, and Coston2 flow stay the same across languages). This is the starting point for building your own extension; the [Getting Started guide](https://dev.flare.network/fcc/guides/getting-started) walks through it end to end.
 - **`flare-foundation/fce-sign`** — an example extension that stores a private key and signs messages with it, shipped in Go, Python, and TypeScript. Demonstrates the TEE signing port and reproducible builds. Explicitly demo-only for the on-chain-secret part.
 - **`flare-foundation/fce-weather-insurance`** — a full FCC application demonstrating parametric rainfall insurance. Policyholders buy cover on-chain; the TEE fetches OpenWeatherMap data and signs settlement results; anyone calls `settle()` to verify and pay out. Supports public and ECIES-encrypted private policies. Includes a Next.js dApp frontend.
 
@@ -138,22 +138,17 @@ func (e *Extension) processSayHello(action teetypes.Action, df *instruction.Data
 
 **Files a developer modifies** (the scaffold marks them ★, and `/rename-scaffold` automates renaming the Hello World placeholders):
 
-1. `internal/config/config.go` — `OPType`/`OPCommand` string constants and version
-2. `pkg/types/types.go` — request/response/state structs
-3. `internal/extension/extension.go` — routing cases + handlers (the main customization point)
-4. `pkg/types/register.go` — decoder registrations for the types server
-5. `contracts/InstructionSender.sol` — matching `bytes32` constants + send functions
-6. `tools/cmd/run-test/main.go` — E2E test payloads and assertions
+1. `go/internal/config/config.go` — `OPType`/`OPCommand` string constants and version
+2. `go/pkg/types/types.go` — request/response/state structs
+3. `go/internal/extension/extension.go` — routing cases + handlers (the main customization point)
+4. `contracts/InstructionSender.sol` — matching `bytes32` constants + send functions
+5. `tools/cmd/run-test/main.go` — E2E test payloads and assertions
 
 After editing the contract, run `./scripts/generate-bindings.sh` to regenerate Go bindings.
 
 ### TEE signing port
 
 Extensions that need to sign, attest, or encrypt with TEE-managed keys call the TEE's **sign port** (e.g. `localhost:7701`/`SIGN_PORT`, or `9090` in some docs — read the scaffold's config) from inside the extension. This is how `fce-sign` signs messages without the key ever leaving the enclave.
-
-### Types server
-
-A lightweight HTTP sidecar (`POST /decode`, `GET /registry`, `GET /health`, default port `8100`) that turns raw hex instruction data into human-readable JSON for frontends and debugging. You register a decoder per `(OPType, OPCommand, Kind)` in `pkg/types/register.go` using `NewJSONDecoder` or `NewABIDecoder` (the ABI decoder takes the ABI argument); `Kind` is `message` (request) or `result` (response). `Lookup` matches `(OPType, OPCommand, Kind)` exactly, then falls back to `(OPType, "", Kind)`.
 
 ## fce-sign: Private Key Extension Example
 
@@ -404,4 +399,4 @@ Most failures are a local stack drifted from the current on-chain deployment or 
 - Reading **FTSO** price feeds, **FDC** attestations, **FAssets** minting/redemption, or **Smart Accounts** — use those dedicated skills.
 - General network facts (chain IDs, RPCs, faucets, explorers) — use `flare-general`.
 
-Use **this** skill when the task involves confidential/TEE execution: building or deploying an extension, the InstructionSender/registry pattern, attestation and code-hash whitelisting, the types server, parametric insurance on TEE, or the `fce-extension-scaffold` / `fce-sign` / `fce-weather-insurance` repos. See also [dev.flare.network/fcc](https://dev.flare.network/fcc/overview) for the official Flare Developer Hub FCC documentation.
+Use **this** skill when the task involves confidential/TEE execution: building or deploying an extension, the InstructionSender/registry pattern, attestation and code-hash whitelisting, parametric insurance on TEE, or the `fce-extension-scaffold` / `fce-sign` / `fce-weather-insurance` repos. See also [dev.flare.network/fcc](https://dev.flare.network/fcc/overview) for the official Flare Developer Hub FCC documentation.
