@@ -34,14 +34,16 @@ All transaction signing, key management, and on-chain execution must occur exclu
 The **Flare Data Connector (FDC)** is an enshrined oracle that validates external data for Flare's EVM state. Users submit attestation requests; data providers reach consensus (a BitVector supported by more than 50% of total provider weight); verified data is stored in a Merkle tree (only the root is onchain). Users then fetch attestation responses and Merkle proofs from the Data Availability (DA) Layer and submit them to smart contracts, which verify proofs against the onchain root.
 
 **Key points:**
-- **Data age limits** — A proof can only be constructed for sufficiently recent states. The maximum allowed data age is set per attestation type and source: most chain-data types (EVMTransaction, Payment, etc.) allow up to **14 days**; `AddressValidity` and `Web2Json` place no practical limit. Once a proof is constructed it remains available indefinitely.
-- **Prepare request** — Verifier API (e.g. `POST .../verifier/web2/Web2Json/prepareRequest` with `attestationType`, `sourceId` and `requestBody` that depends on the attestation type)
+- **Data age limits** — A proof can only be constructed for sufficiently recent states. The maximum allowed data age is set per attestation type and source: most chain-data types (EVMTransaction, Payment, etc.) allow up to **14 days**; `AddressValidity` places no practical limit. Once a proof is constructed it remains available indefinitely.
+- **Prepare request** — Verifier API (e.g. `POST .../verifier/eth/EVMTransaction/prepareRequest` with `attestationType`, `sourceId` and `requestBody` that depends on the attestation type)
 - **Request → FdcHub** (`requestAttestation(bytes)`) with ABI-encoded request; pay fee. The fee must be at least the configured minimum for the attestation type and source (otherwise rejected). Larger fees increase the chance the request is confirmed in its round. Confirmed request fees are awarded to data providers; unconfirmed request fees are burnt.
 - **Round finalization** — typically 90–180 seconds; wait before using a proof.
 - **Proof retrieval** — DA Layer API (e.g. `POST .../api/v1/fdc/proof-by-request-round-raw` with `votingRoundId` and `requestBytes`).
-- **Contract verification** — use `IFdcVerification` (from `ContractRegistry.getFdcVerification()`) and the type-specific method (e.g. `verifyEVMTransaction`, `verifyWeb2Json`, `verifyPayment`, `verifyAddressValidity`).
+- **Contract verification** — use `IFdcVerification` (from `ContractRegistry.getFdcVerification()`) and the type-specific method (e.g. `verifyEVMTransaction`, `verifyPayment`, `verifyAddressValidity`).
 
-**No separate FDC signer list exists.** FDC does not move assets across chains itself; it produces verifiable attestations about events on other chains or Web2 sources. The signers backing an attestation are the current members of the [Flare Signing Policy](https://dev.flare.network/network/fsp) — the same weighted validator set used across the whole Flare Systems Protocol (also backs FTSO and FCC), not something FDC maintains independently.
+> **Web2Json is deprecated.** All Web2Json docs (attestation spec, Hardhat/Foundry guides, Proof of Reserves, Weather Insurance, Web2Json for Custom API, Cross-Chain FDC, URL Parsing Security, `IWeb2Json`/`IWeb2JsonVerification`) are unlisted and no longer maintained. `FdcHub.requestAttestation` **reverts** for `Web2Json` on Flare Mainnet and Songbird — no sources remain there (a new one would need a separate [FIP.14](https://proposals.flare.network/FIP/FIP_14.html#31-process-of-adding-updating-or-removing-an-api-endpoint) proposal). It still works on Coston/Coston2 via `PublicWeb2` (no host whitelist). **To bring Web2 data onchain, build a [Flare Confidential Compute (FCC)](https://dev.flare.network/fcc/overview) extension instead** — see the [Weather Insurance Extension](https://dev.flare.network/fcc/guides/weather-insurance-extension) and the `flare-fcc` skill.
+
+**No separate FDC signer list exists.** FDC does not move assets across chains itself; it produces verifiable attestations about events on other chains. The signers backing an attestation are the current members of the [Flare Signing Policy](https://dev.flare.network/network/fsp) — the same weighted validator set used across the whole Flare Systems Protocol (also backs FTSO and FCC), not something FDC maintains independently.
 
 ## Attestation Types
 
@@ -49,7 +51,7 @@ The **Flare Data Connector (FDC)** is an enshrined oracle that validates externa
 |------|---------|------------------|
 | **AddressValidity** | Validate format/checksum of addresses | BTC, DOGE, XRPL |
 | **EVMTransaction** | Verify and retrieve transaction + events | ETH, FLR, SGB (mainnet); testETH, testFLR, testSGB (testnet) |
-| **JsonApi / Web2Json** | Fetch Web2 data, JQ transform, ABI-encoded output | PublicWeb2 (Coston/Coston2) |
+| **JsonApi / Web2Json** *(deprecated)* | Fetch Web2 data, JQ transform, ABI-encoded output | PublicWeb2 (Coston/Coston2 only; reverts on Flare/Songbird) |
 | **Payment** | Confirm payment tx on non-EVM chains | BTC, DOGE, XRP |
 | **ConfirmedBlockHeightExists** | Verify block existence and confirmations | — |
 | **BalanceDecreasingTransaction** | Validate tx that decreases an address balance | FAssets-oriented |
@@ -57,7 +59,7 @@ The **Flare Data Connector (FDC)** is an enshrined oracle that validates externa
 | **XRPPayment** | Confirm an XRPL Payment with XRPL-native fields (r-address, MemoData, DestinationTag) | XRP, testXRP |
 | **XRPPaymentNonexistence** | Prove no XRPL Payment matched destination/amount/memo/tag in a ledger range | XRP, testXRP |
 
-First three are most generally useful; the next three are mainly for **FAssets**; the XRPL-specific types expose XRPL-native fields (memo data, destination tag) that the chain-agnostic Payment type does not.
+AddressValidity, EVMTransaction, and Payment are the most used in production (the docs now count **six** active types, excluding deprecated Web2Json); the next three are mainly for **FAssets**; the XRPL-specific types expose XRPL-native fields (memo data, destination tag) that the chain-agnostic Payment type does not.
 
 ## User Workflow (Offchain + Onchain)
 
@@ -70,7 +72,7 @@ First three are most generally useful; the next three are mainly for **FAssets**
 
 ## Contract Pattern (Verification + Business Logic)
 
-- Resolve **FdcVerification** via `ContractRegistry.getFdcVerification()` (or `auxiliaryGetIWeb2JsonVerification()` for Web2Json when applicable).
+- Resolve **FdcVerification** via `ContractRegistry.getFdcVerification()` (or `auxiliaryGetIWeb2JsonVerification()` for the deprecated, testnet-only Web2Json).
 - **Always verify first**, then decode and use data. Example (EVMTransaction):
 
 ```solidity
@@ -80,12 +82,12 @@ function processProof(IEVMTransaction.Proof calldata proof) external {
 }
 ```
 
-- For **Web2Json**, decode `proof.data.responseBody.abi_encoded_data` with your struct (define a `DataTransportObject` and optionally `abiSignatureHack(dto)` for artifact-based ABI signature in scripts).
+- For **Web2Json** (deprecated, testnet-only), decode `proof.data.responseBody.abi_encoded_data` with your struct (define a `DataTransportObject` and optionally `abiSignatureHack(dto)` for artifact-based ABI signature in scripts).
 - Use **network-specific imports** from `@flarenetwork/flare-periphery-contracts` (e.g. `coston2/ContractRegistry.sol`, `coston2/IEVMTransaction.sol`). Set EVM version **cancun** where required.
 
 ## Script / Offchain Pattern (Hardhat)
 
-- **Prepare:** POST to verifier e.g. `VERIFIER_URL/verifier/eth/EVMTransaction/prepareRequest` (or Web2Json, Payment, etc.) with attestation type, sourceId, request body; get `abiEncodedRequest`.
+- **Prepare:** POST to verifier e.g. `VERIFIER_URL/verifier/eth/EVMTransaction/prepareRequest` (or Payment, AddressValidity, etc.) with attestation type, sourceId, request body; get `abiEncodedRequest`.
 - **Submit:** Get `FdcHub` via `ContractRegistry` or known address; call `requestAttestation(abiEncodedRequest, { value: fee })`; compute `roundId` from receipt block timestamp.
 - **Wait:** Poll `Relay.isFinalized(200, roundId)`.
 - **Fetch:** POST to DA Layer `.../api/v1/fdc/proof-by-request-round-raw` with `votingRoundId`, `requestBytes`.
@@ -109,9 +111,9 @@ Pass the key via the `X-API-KEY` header when calling verifier endpoints — the 
 - **[flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter):**
   - **scripts/fdcExample/** — Per–attestation-type examples: `EVMTransaction.ts`, `Web2Json.ts`, `Payment.ts`, `AddressValidity.ts`, etc. Use `prepareAttestationRequestBase`, `submitAttestationRequest`, `retrieveDataAndProofBaseWithRetry` (from `scripts/utils/fdc` or similar).
   - **contracts/fdcExample/** — `EVMTransaction.sol`, `AddressValidity.sol`, `Web2Json.sol`, `Payment.sol` — show verification + decoding.
-  - **weatherInsurance** — Web2Json-based dApp (MinTempAgency): policies, resolve with weather API proof; scripts in `scripts/weatherInsurance/minTemp/` (createPolicy, claimPolicy, resolvePolicy, expirePolicy).
-  - **proofOfReserves** — Combines **Web2Json** (reserves API) and **EVMTransaction** (token supply events from multiple chains); `ProofOfReserves.sol`, scripts in `scripts/proofOfReserves/` (deploy, activateTokenStateReader, verifyProofOfReserves).
-- **[flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter):** Same attestation types plus cross-chain payment and cross-chain FDC examples; structure mirrors Hardhat.
+  - **weatherInsurance** *(deprecated — Web2Json)* — dApp (MinTempAgency): policies, resolve with weather API proof; scripts in `scripts/weatherInsurance/minTemp/` (createPolicy, claimPolicy, resolvePolicy, expirePolicy).
+  - **proofOfReserves** *(deprecated — Web2Json)* — Combines **Web2Json** (reserves API) and **EVMTransaction** (token supply events from multiple chains); `ProofOfReserves.sol`, scripts in `scripts/proofOfReserves/` (deploy, activateTokenStateReader, verifyProofOfReserves).
+- **[flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter):** Same attestation types plus cross-chain payment and (deprecated, Web2Json-based) cross-chain FDC examples; structure mirrors Hardhat.
 
 Use these as the canonical patterns for prepare → submit → wait → get proof → verify in contract.
 
@@ -121,7 +123,10 @@ Use these as the canonical patterns for prepare → submit → wait → get proo
 - **Response:** `blockNumber`, `timestamp`, `sourceAddress`, `receivingAddress`, `value`, `input`, `status`, `events[]` (logIndex, emitterAddress, topics, data, removed). Events are block-level indexed.
 - Decode events in contract by filtering `emitterAddress` and `topics[0]` (e.g. `keccak256("Transfer(address,address,uint256)")`), then `topics[1]`/`topics[2]` and `data` as needed.
 
-## Web2Json Quick Reference
+## Web2Json Quick Reference (deprecated — Coston/Coston2 only)
+
+Kept for existing testnet integrations; for new Web2 data needs use an FCC extension.
+
 
 - **Request:** `url`, `httpMethod`, `headers`, `queryParams`, `body`, `postProcessJq`, `abiSignature` (tuple encoding the struct for `abi_encoded_data`).
 - **Response:** `responseBody.abi_encoded_data` — decode with `abi.decode(..., (YourStruct))`. Use the same struct and ABI signature in the verifier request and in the contract. Store fractional values as scaled integers (e.g. 10^6) if needed.

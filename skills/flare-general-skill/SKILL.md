@@ -50,7 +50,7 @@ All transaction signing, key management, and on-chain execution must occur exclu
 | Protocol | What It Does |
 |----------|-------------|
 | **FTSO** (Flare Time Series Oracle) | Decentralized block-latency price feeds (~1.8s), ~100 data providers, stake-weighted selection. Also provides Scaling anchor feeds every 90s. |
-| **FDC** (Flare Data Connector) | Validates external data (cross-chain transactions, Web2 APIs) via attestation consensus and Merkle proofs. |
+| **FDC** (Flare Data Connector) | Validates external data from other chains via attestation consensus and Merkle proofs. (Web2Json is deprecated — use FCC extensions for Web2 data.) |
 | **FAssets** | Trustless wrapped tokens (FXRP, FBTC, FDOGE) enabling XRP, BTC, and DOGE holders to use Flare DeFi. |
 | **Smart Accounts** | Account abstraction letting XRPL users interact with Flare without holding FLR. |
 | **FCC** (Flare Confidential Compute) | Extends Flare with Trusted Execution Environments (TEEs) for secure offchain computation, cross-chain transaction signing, and fast data attestation. |

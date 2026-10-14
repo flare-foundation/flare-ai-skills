@@ -119,24 +119,26 @@ AssetManager.getDirectMintingOthersCanExecuteAfterSeconds()
 
 ## Rate Limiting Parameters
 
-Direct minting is subject to rate limits that delay (not reject) large or high-frequency mints:
+Direct minting is subject to rate limits that delay (not reject) large or high-frequency mints. Only the FAsset-wide minting cap rejects:
 
 | Parameter | Purpose |
 |-----------|---------|
 | `getDirectMintingHourlyLimitUBA()` | Hourly cap on total minted |
 | `getDirectMintingDailyLimitUBA()` | Daily cap on total minted |
-| `getDirectMintingLargeMintingThresholdUBA()` | Threshold above which a mint is "large" |
+| `getDirectMintingLargeMintingThresholdUBA()` | Threshold at or above which a mint is "large" |
 | `getDirectMintingLargeMintingDelaySeconds()` | Fixed delay added to large mints |
+| `getSettings().mintingCapAMG` | FAsset-wide minting cap — **reverts** `MintingCapExceeded` (`0` = disabled) |
 
 **Throttling behavior:**
-- Limits delay the execution rather than rejecting it.
-- A mint is "large" when its amount is **strictly greater than** `getDirectMintingLargeMintingThresholdUBA()`; it then incurs the fixed `getDirectMintingLargeMintingDelaySeconds()` delay independently of the hourly/daily windows — this still applies even when both windows have full headroom. Large mints are not counted toward the hourly/daily windows.
+- Order in `executeDirectMinting`: **minting cap** (checked and reserved first: `totalReservedCollateralAMG + toAmg(fAsset.totalSupply()) + amountAmg <= mintingCapAMG`, else revert, no event) → **large-mint branch** → else **hourly/daily windows**. The rate limits delay execution rather than rejecting it.
+- A mint is "large" when its amount is **greater than or equal to** `getDirectMintingLargeMintingThresholdUBA()` (exactly at the threshold is already large). It takes an `if`/`else` branch: fixed `getDirectMintingLargeMintingDelaySeconds()` delay, the windows never run, no window capacity is consumed. A large mint is always registered as delayed — even with a zero delay it needs a second `executeDirectMinting` call.
+- Window boundaries are inclusive: a mint executes immediately only while `mintedInCurrentWindow < maxMintingPerWindow`, so the largest immediate mint is one AMG below the remaining headroom. Window sizes (`1 hours`, `1 days`) are fixed at initialization with no getter.
 - Hourly/daily throttling emits `DirectMintingDelayed`; the large-mint delay emits a separate `LargeDirectMintingDelayed` event instead (both carry an `executionAllowedAt` timestamp). A bound mint does not revert — it re-executes via the same finalizing call (`executeDirectMinting`/`executeDirectMintingWithData`) with the same FDC proof once `executionAllowedAt` passes.
-- If multiple rules apply, `executionAllowedAt` is whichever pushes furthest into the future.
-- Governance can unblock the **hourly/daily** limiter via `unblockDirectMintingsUntil` after manual review (emits `DirectMintingsUnblocked`) — this bypass does **not** apply to the large-minting delay; amounts above the threshold are still held for `getDirectMintingLargeMintingDelaySeconds()`. After unblocking, call `markUnblockedDirectMintingAllowed(transactionId)` to reset a preferred executor's exclusive window from the unblock time.
+- Below the threshold, `executionAllowedAt` is whichever of hourly/daily pushes further out. A delayed minting keeps its reserved capacity; the retry (same FDC proof) is not re-evaluated against cap or limiters, and calling before `executionAllowedAt` reverts `DirectMintingStillDelayed`.
+- Governance releases a backlog after manual review via `unblockDirectMintingsUntil` (emits `DirectMintingsUnblocked`). It only accepts a timestamp **in the past** and is retroactive: every already-delayed minting that started before it becomes executable immediately — **including large-minting delays**. New mintings are still rate-limited; `getDirectMintingsUnblockUntilTimestamp()` never means the limiter is off. After unblocking, call `markUnblockedDirectMintingAllowed(transactionId)` to reset a preferred executor's exclusive window from the unblock time.
 - Query `directMintingDelayState(transactionId)` → `allowedAt` to read the current delay/unblock state for a given XRPL transaction.
 
-**Pre-flight check:** [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits) — reads and replays the tumbling-window state off-chain, then evaluates a proposed amount against all three delay mechanisms (hourly, daily, large-mint) to report whether it would execute immediately or emit `DirectMintingDelayed`/`LargeDirectMintingDelayed`. `bigintMin(hourlyHeadroom, dailyHeadroom, largeThresholdUBA)` is the largest amount that avoids delay from any rule (minting exactly at the large-mint threshold is fine; strictly above it triggers the hold).
+**Pre-flight check:** [Check Direct Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits) — reads and replays the tumbling-window state off-chain, then evaluates a proposed amount (floored to whole AMG like `Conversion.convertUBAToAmg`) against the minting cap and the three delay mechanisms, reporting whether it would execute immediately, revert `MintingCapExceeded`, or emit `DirectMintingDelayed`/`LargeDirectMintingDelayed`. All reads are pinned to one block and use its `timestamp` as `now`. The safe maximum is the min of both windows' `maxWithoutDelayUBA`, one AMG below the large-mint threshold, and the cap headroom (an upper bound).
 
 **Other events on `executeDirectMinting`:**
 - `DirectMintingExecutedToSmartAccount` — fires instead of `DirectMintingExecuted` when the payment has no registered tag recipient and no valid direct-minting memo; FAssets mint to the smart account manager, which routes them by `sourceAddress`/`memoData`. The executor fee is not set by AssetManager in this path.

@@ -101,7 +101,7 @@ Minting requires only a **single XRPL payment** to the Core Vault address. No co
 2. Send the XRPL **payment** to the Core Vault address (`AssetManager.directMintingPaymentAddress()`).
 3. An **executor** calls `executeDirectMinting` (or `executeDirectMintingWithData` for smart-account hash-commitment memos) on Flare to finalize → FXRP is minted to the recipient.
 
-**Fees:** Percentage-based minting fee (with a minimum floor) + a flat executor fee, both deducted from the payment. If the payment only covers the minting fee, the executor receives nothing; if it is below the minimum minting fee, no FAssets are minted and the entire payment goes to the fee receiver. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints.
+**Fees:** Percentage-based minting fee (with a minimum floor) + a flat executor fee, both deducted from the payment. If the payment only covers the minting fee, the executor receives nothing; if it is below the minimum minting fee, no FAssets are minted and the entire payment goes to the fee receiver. Rate limits (hourly/daily caps, large-mint delays) throttle but do not reject mints; only the FAsset-wide minting cap (`mintingCapAMG`) rejects (reverts `MintingCapExceeded`).
 
 **Skill guide:** [direct-minting-guide.md](direct-minting-guide.md)
 
@@ -115,6 +115,11 @@ Agents can act as minters and mint FAssets directly from their own vaults. When 
 
 ### Redemption
 Users redeem FAssets for the original underlying asset at any time (flow is request → agent pays out on underlying chain).
+
+**Redemption fees:** two fees, applied in sequence (both BIPS, each rounded down), plus an optional FLR executor fee. Redeemer receives `x · (1 − systemRedemptionFeeBIPS/10000) · (1 − redemptionFeeBIPS/10000)` underlying. Both are skipped on a transfer to the core vault. See [Redemption fees](https://dev.flare.network/fassets/redemption#fees).
+- **System fee** (taken first, at request creation): `systemRedemptionFeeBIPS` is cut from the redeemed amount and the same amount of FAssets is **minted** to `systemRedemptionFeeReceiver` (event `SystemRedemptionFeePaid(agentVault, requestId, feeUBA)`). A zero-address receiver disables it. `effectiveSystemRedemptionFeeBIPS()` returns the charged rate — **not implemented on Coston2 (reverts)**; read `systemRedemptionFeeBIPS()` + `systemRedemptionFeeReceiver()` instead. Governance sets them via `setSystemRedemptionFeeBIPS`/`setSystemRedemptionFeeReceiver` on `RedeemExtendedSettingsFacet`. Current XRP values: **0.02%** on Flare and Coston2 (receiver `0x6E815bB968e32f91C7e273b9e1CDAE2825Bf8F3a`), 0% / zero receiver on Songbird and Coston.
+- **Agent fee** (global `redemptionFeeBIPS`, now **0.18%** for XRP, was 0.2%): taken from what remains, stored as `underlyingFeeUBA`; the agent pays `valueUBA − feeUBA` and keeps the rest. On payment confirmation the agent's own `redemptionPoolFeeShareBIPS` of it is minted as FAssets into its collateral pool (`RedemptionPoolFeeMinted`).
+- On `RedemptionRequested`, `valueUBA` is the amount **after** the system fee and `feeUBA` is the agent fee. `_amountUBA` passed to `redeemAmount`/`redeemWithTag` is what gets burned, not what is received.
 
 **Redeem by Amount:** `redeemAmount(amountUBA, ...)` redeems an arbitrary amount in UBA (not whole lots). Validate against `minimumRedeemAmountUBA()`; partial fulfillment emits `RedemptionAmountIncomplete`. Developer guide (TypeScript/viem): [Redeem FXRP by Amount](https://dev.flare.network/fassets/developer-guides/fassets-redeem-amount).
 
@@ -174,10 +179,11 @@ The standard single-transaction minting path (formerly "direct minting"). No col
 **Rate limits (tumbling windows):** Direct minting uses clock-aligned tumbling windows (hourly: 3600s aligned to UTC, daily: 86400s aligned to 00:00 UTC). Mints over the cap are delayed, not rejected. Query:
 - `getDirectMintingHourlyLimitUBA()`, `getDirectMintingDailyLimitUBA()` — caps
 - `getDirectMintingHourlyLimiterState()`, `getDirectMintingDailyLimiterState()` — raw window state (advance off-chain for live values)
-- `getDirectMintingsUnblockUntilTimestamp()` — if future, the **hourly/daily** limiter is temporarily disabled by governance (does not bypass the large-mint delay)
+- `getDirectMintingsUnblockUntilTimestamp()` — timestamp of the last governance `unblockDirectMintingsUntil` (`0` if never used); always in the **past**. Retroactive only: every already-delayed minting that started before it (including large-mint delays) can execute immediately; new mintings are still rate-limited — do not read it as "limiter off"
 - `assetMintingGranularityUBA()` — granularity to convert AMG units to UBA
-- `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — a mint strictly above the threshold is delayed independently of the hourly/daily windows
-Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (large-mint threshold) events; the binding rule is whichever pushes `executionAllowedAt` furthest out. Query `directMintingDelayState(transactionId)` for current state, and call `markUnblockedDirectMintingAllowed(transactionId)` after a governance unblock (`DirectMintingsUnblocked`) to reset the executor exclusive window. Developer guide: [Check Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits). Full troubleshooting: [Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting)
+- `getDirectMintingLargeMintingThresholdUBA()`, `getDirectMintingLargeMintingDelaySeconds()` — a mint **at or above** the threshold (`>=`) is large: it takes its own branch, is always delayed (even with zero delay it needs a second `executeDirectMinting`), skips the hourly/daily windows, and consumes no window capacity
+- `getSettings().mintingCapAMG` — FAsset-wide cap checked and reserved **before** the rate limits: `totalReservedCollateralAMG + toAmg(totalSupply) + amountAmg <= mintingCapAMG`, else **revert** `MintingCapExceeded` (`0` disables). Reserved capacity has no getter, so off-chain `mintingCap − totalSupply` is an upper bound
+Watch for `DirectMintingDelayed` (hourly/daily) or `LargeDirectMintingDelayed` (large-mint) events — the two are mutually exclusive; below the threshold the binding window is whichever of hourly/daily pushes `executionAllowedAt` further. Window boundaries are inclusive too: a mint landing exactly on a window cap is delayed. A delayed retry with the same FDC proof is not re-evaluated against the cap or limiters; calling before `executionAllowedAt` reverts `DirectMintingStillDelayed`. Query `directMintingDelayState(transactionId)` for current state, and call `markUnblockedDirectMintingAllowed(transactionId)` after a governance unblock (`DirectMintingsUnblocked`) to reset the executor exclusive window. Developer guide: [Check Minting Limits](https://dev.flare.network/fassets/developer-guides/fassets-mint-limits). Full troubleshooting: [Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting)
 
 **MintingTagManager** (access via `AssetManager.getMintingTagManager()`):
 - `reserve()` — payable; reserves a tag NFT, returns tag ID
@@ -301,6 +307,8 @@ FXRP supports **gasless (meta-transaction) transfers** via EIP-712 signed paymen
 **Collateral Reservation & Minting Execution:** `reserveCollateral(agentVault, lots, maxFeeBIPS, executor)`, `executeMinting(IPayment.Proof proof, collateralReservationId)`, `executeDirectMinting(IXRPPayment.Proof proof)`, `executeDirectMintingWithData(IXRPPayment.Proof proof, bytes data)` (for smart-account custom instructions; `data` = ABI-encoded `PackedUserOperation`; only valid for smart-account targets)
 
 **Core Vault:** `getCoreVaultManager()`, `getCoreVaultDonationTag()`, `getCoreVaultMinimumAmountLeftBIPS()`, `getCoreVaultTransferTimeExtensionSeconds()`, `getCoreVaultTransferFeeBIPS()`, `getCoreVaultMinimumRedeemLots()`, `getCoreVaultRedemptionFeeBIPS()`
+
+**Redemption Fee Settings:** `systemRedemptionFeeBIPS()`, `systemRedemptionFeeReceiver()`, `effectiveSystemRedemptionFeeBIPS()` (not on Coston2)
 
 **Reference:** [IAssetManager](https://dev.flare.network/fassets/reference/IAssetManager) | [IMintingTagManager](https://dev.flare.network/fassets/reference/IMintingTagManager)
 

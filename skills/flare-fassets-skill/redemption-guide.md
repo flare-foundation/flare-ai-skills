@@ -59,8 +59,10 @@ AssetManager.redeem(lots, redeemerUnderlyingAddressString, executorAddress)
 - `agentVault` — the agent handling the redemption
 - `requestId` — unique redemption request ID
 - `paymentAddress` — agent's underlying chain address
-- `valueUBA` — FAssets value in base units
-- `feeUBA` — redemption fee
+- `valueUBA` — redeemed amount **after** the system fee
+- `feeUBA` — agent fee (`underlyingFeeUBA`); the agent pays `valueUBA − feeUBA`
+
+**`SystemRedemptionFeePaid(agentVault, requestId, feeUBA)`** — emitted when the system fee is minted as FAssets to `systemRedemptionFeeReceiver`. See [Redemption fees](https://dev.flare.network/fassets/redemption#fees): redeemer receives `x · (1 − systemRedemptionFeeBIPS/10000) · (1 − redemptionFeeBIPS/10000)`; both fees are skipped on a core-vault transfer.
 - `firstUnderlyingBlock` / `lastUnderlyingBlock` — payment window blocks
 - `lastUnderlyingTimestamp` — payment deadline
 - `paymentReference` — reference for tracking
@@ -112,7 +114,9 @@ The agent must still attempt the payment before requesting either proof.
 
 ## Redemption Queue
 
-FAssets uses a redemption queue (redemption ticket system) to track pending redemptions. You can query the queue to see total pending redemption value and lots.
+Every mint (including agent self-mint) appends a redemption ticket to one global FIFO shared by all agents; a redemption takes tickets from the front. One request consumes at most `maxRedeemedTickets` tickets (from `getSettings()`) — beyond that it is partly filled and emits `RedemptionAmountIncomplete`.
+
+`redemptionQueue(_firstRedemptionTicketId, _pageSize)` returns `(_queue, _nextRedemptionTicketId)`: pass `0` to start at the head, follow `_nextRedemptionTicketId` until it is `0`. Each `RedemptionTicketInfo` has `redemptionTicketId`, `agentVault`, `ticketValueUBA`. One lot in UBA = `lotSizeAMG * assetMintingGranularityUBA`. `agentRedemptionQueue` returns the same shape for one vault. Pin all reads to one block for a consistent snapshot. The docs' runnable example is [`flare-viem-starter` `src/fassets/redemption-queue.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redemption-queue.ts) (`pnpm run script src/fassets/redemption-queue.ts`).
 
 **Skill script:** [scripts/get-redemption-queue.ts](scripts/get-redemption-queue.ts)
 

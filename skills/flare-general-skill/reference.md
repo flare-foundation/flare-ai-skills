@@ -116,7 +116,7 @@ Full directory: [dev.flare.network/network/developer-tools](https://dev.flare.ne
 ## Core Protocol Docs
 
 - [FTSO Overview](https://dev.flare.network/ftso/overview) — Price feeds oracle
-- [FDC Overview](https://dev.flare.network/fdc/overview) — Cross-chain and Web2 attestations
+- [FDC Overview](https://dev.flare.network/fdc/overview) — Cross-chain attestations (Web2Json deprecated; use FCC for Web2 data)
 - [FAssets Overview](https://dev.flare.network/fassets/overview) — Wrapped BTC, XRP, DOGE
 - [Smart Accounts Overview](https://dev.flare.network/smart-accounts/overview) — XRPL account abstraction
 - [FCC Overview](https://dev.flare.network/fcc/overview) — Flare Confidential Compute: TEEs, Protocol Managed Wallets, Flare Compute Extensions

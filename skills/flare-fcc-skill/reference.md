@@ -4,19 +4,20 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Flare Developer Hub (FCC)
 
-- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development, available on Coston2 and Coston today, and coming to other Flare networks soon.
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development, available on Coston2, Coston, and Songbird today, and coming to other Flare networks soon.
 - [FCC Reference](https://dev.flare.network/fcc/reference) — Solidity ABI reference for the `FlareTeeManager` diamond and its facets: [`IFlareTeeManager`](https://dev.flare.network/fcc/reference/IFlareTeeManager), [`IExtensionManager`](https://dev.flare.network/fcc/reference/IExtensionManager), [`IMachineManager`](https://dev.flare.network/fcc/reference/IMachineManager), [`IVerification`](https://dev.flare.network/fcc/reference/IVerification), [`IOperationFees`](https://dev.flare.network/fcc/reference/IOperationFees), [`IOwnerAllowlist`](https://dev.flare.network/fcc/reference/IOwnerAllowlist), [`ITeeCommonErrors`](https://dev.flare.network/fcc/reference/ITeeCommonErrors)
 - [TEE Public and Private Keys](https://dev.flare.network/fcc/tee-keys) — The per-machine identity keypair, ECDSA (sign/verify) vs ECIES (encrypt/decrypt), and the encrypt-off-chain/decrypt-inside-the-enclave pattern via `POST /decrypt`.
 - [Data Providers and Cosigners](https://dev.flare.network/fcc/data-providers) — How instructions are relayed and signed by the Flare Systems Protocol data-provider set (>50% signing weight) before a TEE executes, and the cosigner gate for sensitive operations.
-- [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting) — `query-tee` diagnostics, stale tunnel URLs, `tee-node`/`tee-proxy` version skew, reserved `F_` operation names, and indexer DB credential issues.
-- [Build Your First Extension (Getting Started)](https://dev.flare.network/fcc/guides/getting-started) — Hello World scaffold walkthrough: instruction lifecycle, the files you own, OPType/OPCommand customization, and deploying/testing on Coston2. Start here.
-- [Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with ngrok, end-to-end test, troubleshooting, and cleanup
+- [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting) — `query-tee` diagnostics, stale tunnel URLs, `tee-node`/`tee-proxy` version skew, reserved `F_` operation names, indexer DB credential issues, and the new-reward-epoch `initial_signing_policy_offset=1` fix.
+- [Build Your First Extension (Getting Started)](https://dev.flare.network/fcc/guides/getting-started) — Hello World scaffold walkthrough: instruction lifecycle, the files you own, OPType/OPCommand customization in Go, Python, or TypeScript, and deploying/testing on Coston2 (`use-chain.sh` + bundled Cloudflare tunnel + `full-setup.sh`). Start here.
+- [Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with the bundled Cloudflare tunnel, `update-tee-url.sh`/`check-tee-machines.sh`/`check-tee-state`, end-to-end test, troubleshooting, and cleanup
+- [Migrate After a Protocol Redeploy](https://dev.flare.network/fcc/guides/protocol-redeploy-migration) — Repoint a running extension stack at redeployed `Relay`/`FlareSystemsManager`/`VoterRegistry`: version floor (`tee-proxy v0.0.24`, `tee-node v0.0.26`), address diff, proxy `[addresses]` edit, restarting both services, registering the new TEE identity and pausing the stale one
 - [Weather Insurance Extension Guide](https://dev.flare.network/fcc/guides/weather-insurance-extension) — Full FCC application: parametric rainfall insurance, ECIES-encrypted private policies, settlement via OpenWeatherMap data, Next.js frontend. Prerequisites: Docker Desktop, Foundry, Go, an HTTPS tunnel (ngrok or cloudflared) to port 6674, an OpenWeatherMap API key, and a funded Coston2 wallet.
 - [FCC Whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf) — "Flare Confidential Compute: Powering Interoperability for Flare through TEEs" (Jul 6, 2026): the FCC mechanism, Protocol Managed Wallets, Flare Compute Extensions, and FDC2
 
 ## Reference Repositories
 
-- [flare-foundation/fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold) — Runnable "Hello World" TEE extension (Go, Python, or TypeScript via `LANGUAGE` in `.env`): contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). The starting point for building an extension.
+- [flare-foundation/fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold) — Runnable "Hello World" TEE extension (Go, Python, or TypeScript via `./scripts/use-chain.sh <chain> --language`): contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). The starting point for building an extension.
 - [fce-extension-scaffold README](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/README.md) — Repo structure, env vars, ports, local + Coston2 deployment walkthroughs
 - [Extension Development Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-guide.md) — How an extension works, architecture, the files you modify, the action-handler pattern, data flow
 - [InstructionSender Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/instruction-sender.md) — On-chain entry point requirements, scaffold contract, writing a custom sender
@@ -27,8 +28,8 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Signing Example
 
-- [flare-foundation/fce-sign](https://github.com/flare-foundation/fce-sign) — Example TEE extension that stores a private key and signs messages with it. Ships in Go, Python, and TypeScript (select with `LANGUAGE`). **Demo only**: it stores an encrypted secret on-chain, which is not safe for production.
-- [fce-sign REPRODUCIBILITY.md](https://github.com/flare-foundation/fce-sign/blob/main/REPRODUCIBILITY.md) — `SOURCE_DATE_EPOCH`, reproducible image builds, and the cross-machine code-hash caveats for Python/TS
+- [flare-foundation/fce-sign](https://github.com/flare-foundation/fce-sign) — Example TEE extension that stores a private key and signs messages with it. Ships in Go, Python, and TypeScript (select with `use-chain.sh --language`). **Demo only**: it stores an encrypted secret on-chain, which is not safe for production.
+- [fce-sign docs/reproducibility.md](https://github.com/flare-foundation/fce-sign/blob/main/docs/reproducibility.md) — `SOURCE_DATE_EPOCH`, reproducible image builds, and the cross-machine code-hash caveats for Python/TS
 
 ## Weather Insurance Extension
 
@@ -67,4 +68,4 @@ Onchain, the registry surface lives behind one [EIP-2535](https://eips.ethereum.
 - **Local vs live:** `LOCAL_MODE=true` skips attestation for local dev; set `false` on Coston/Coston2. Pair with `SIMULATED_TEE=false`.
 - **Reproducible builds:** set `SOURCE_DATE_EPOCH` (e.g. `git log -1 --format=%ct`) so the same source yields the same code hash. Go is bit-for-bit cross-machine; Python/TS are best-effort.
 - **`register-tee -command rRap`** — issues a fresh attestation challenge on re-runs (avoids `Verification.ChallengeExpired`).
-- **Proxy `/info` → `machineData`:** `platform` starts `0x4743505f414d445f534556…` (GCP_AMD_SEV); `codeHash` must be a real measured hash (not the simulated `0x194844cf…`); `extensionId`/`initialOwner` must match `config/extension.env`.
+- **Proxy `/info` → `machineData`:** `platform` starts `0x4743505f414d445f534556…` (GCP_AMD_SEV); `codeHash` must be a real measured hash (not the simulated `0x194844cf…`); `extensionId`/`initialOwner` must match `config/<chain>/extension.env`.

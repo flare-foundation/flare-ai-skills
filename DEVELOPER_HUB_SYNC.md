@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `65d7ebf8480318684a0aee2dfd4aed9544c4461a`
-- **Date:** 2026-09-02
-- **Subject:** `Merge branch 'feat/sepolia-oft-deployment' into 'main'`
+- **Commit:** `a54a8d60a0963085000e540f69c46bdf3099e0f2`
+- **Date:** 2026-10-09
+- **Subject:** `Merge branch 'chore/deprecate-web2-json' into 'main'`
 
 ## How to sync next time
 

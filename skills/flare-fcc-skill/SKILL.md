@@ -29,10 +29,10 @@ All transaction signing, key management, attestation, and on-chain execution hap
 
 Use FCC when an application needs **confidential state, secret-holding, or off-chain compute whose integrity is provable on-chain** — e.g. a key manager that signs on behalf of users, sealed-bid auctions, private order matching, or any "the chain triggers it but the computation must stay private and attested" workload.
 
-FCC is in the **final stages of development**. It is available on **Coston2** and **Coston** today and will be available on other Flare networks soon — start with the [Build Your First Extension](https://dev.flare.network/fcc/guides/getting-started) guide (Hello World scaffold walkthrough). For the mechanism in depth, see the [FCC whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
+FCC is in the **final stages of development**. It is available on **Coston2**, **Coston**, and **Songbird** today and will be available on other Flare networks soon — start with the [Build Your First Extension](https://dev.flare.network/fcc/guides/getting-started) guide (Hello World scaffold walkthrough). For the mechanism in depth, see the [FCC whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
 
 **Reference repos:**
-- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension with contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). Implemented in Go, Python, and TypeScript — set `LANGUAGE=go|python|typescript` in `.env` (Go is the default; the contract, scripts, and Coston2 flow stay the same across languages). This is the starting point for building your own extension; the [Getting Started guide](https://dev.flare.network/fcc/guides/getting-started) walks through it end to end.
+- **`flare-foundation/fce-extension-scaffold`** — a runnable "Hello World" extension with contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). Implemented in Go, Python, and TypeScript — pass `--language go|python|typescript` to `./scripts/use-chain.sh` (Go is the default; the contract, scripts, and Coston2 flow stay the same across languages). This is the starting point for building your own extension; the [Getting Started guide](https://dev.flare.network/fcc/guides/getting-started) walks through it end to end.
 - **`flare-foundation/fce-sign`** — an example extension that stores a private key and signs messages with it, shipped in Go, Python, and TypeScript. Demonstrates the TEE signing port and reproducible builds. Explicitly demo-only for the on-chain-secret part.
 - **`flare-foundation/fce-weather-insurance`** — a full FCC application demonstrating parametric rainfall insurance. Policyholders buy cover on-chain; the TEE fetches OpenWeatherMap data and signs settlement results; anyone calls `settle()` to verify and pay out. Supports public and ECIES-encrypted private policies. Includes a Next.js dApp frontend.
 
@@ -136,13 +136,19 @@ func (e *Extension) processSayHello(action teetypes.Action, df *instruction.Data
 }
 ```
 
-**Files a developer modifies** (the scaffold marks them ★, and `/rename-scaffold` automates renaming the Hello World placeholders):
+**Files a developer modifies** — one language directory plus the Solidity contract (the scaffold marks them ★, and `/rename-scaffold` automates renaming the Hello World placeholders):
 
-1. `go/internal/config/config.go` — `OPType`/`OPCommand` string constants and version
-2. `go/pkg/types/types.go` — request/response/state structs
-3. `go/internal/extension/extension.go` — routing cases + handlers (the main customization point)
-4. `contracts/InstructionSender.sol` — matching `bytes32` constants + send functions
-5. `tools/cmd/run-test/main.go` — E2E test payloads and assertions
+| Role | Go | Python | TypeScript |
+| ---- | -- | ------ | ---------- |
+| `OPType`/`OPCommand` constants (+ SemVer `Version` in Go) | `go/internal/config/config.go` | `python/app/config.py` | `typescript/src/app/config.ts` |
+| Handlers (main customization point) | `go/internal/extension/extension.go` | `python/app/handlers.py` (wire in `register()`) | `typescript/src/app/handlers.ts` (wire in `register()`) |
+| Request/response types | `go/pkg/types/types.go` | inline in handlers | inline in handlers |
+| ABI decoding | `go/pkg/types/types.go` | `python/app/abi.py` | `typescript/src/app/abi.ts` |
+| Shared | `contracts/InstructionSender.sol` (matching `bytes32` constants + send functions), `tools/cmd/run-test/main.go` (E2E payloads/assertions) | — | — |
+
+Leave the framework layer intact: `go/internal/extension/utils.go` and `pkg/server/` (Go), `python/base/`, `typescript/src/base/`. The constant strings must be identical in the contract and in every implementation you run.
+
+The scaffold's Coston2 walkthrough mirrors fce-sign below: `./scripts/use-chain.sh coston2 --simulated [--language python|typescript]` → set deployer keys in `.env.local.coston2` → fill `[db]` in the generated proxy TOML → `./scripts/full-setup.sh --chain coston2 --test`. `start-services.sh` starts a Cloudflare tunnel to port 6674 and writes `EXT_PROXY_URL` for you; per-chain artifacts land in `config/coston2/extension.env`.
 
 After editing the contract, run `./scripts/generate-bindings.sh` to regenerate Go bindings.
 
@@ -152,7 +158,7 @@ Extensions that need to sign, attest, or encrypt with TEE-managed keys call the 
 
 ## fce-sign: Private Key Extension Example
 
-The `fce-sign` repo demonstrates the full TEE workflow: store an ECIES-encrypted private key, sign arbitrary messages. Available in Go, Python, and TypeScript (set `LANGUAGE` in `.env`).
+The `fce-sign` repo demonstrates the full TEE workflow: store an ECIES-encrypted private key, sign arbitrary messages. Available in Go, Python, and TypeScript (select with `use-chain.sh --language`).
 
 ### Docker Service Architecture
 
@@ -162,6 +168,8 @@ Three containers run as Docker services:
 - **`ext-proxy`** — watches the chain for new instructions, forwards them to your handler, submits results back on-chain.
 - **`redis`** — in-memory store used by the proxy.
 
+For local runs a fourth container, **`cloudflared`**, publishes the proxy on a public HTTPS URL so Flare's infrastructure can deliver instructions. It lives in its own compose project (`tunnel`, `docker-compose.cloudflared.yaml`) shared across extensions — `start-services.sh` reuses one that is already running.
+
 ### Port Reference (fce-sign)
 
 | Service            | Container port | Host port |
@@ -170,72 +178,69 @@ Three containers run as Docker services:
 | ext-proxy external | 6664           | 6674      |
 | redis              | 6379           | 6382      |
 
-ngrok exposes host port **6674** (ext-proxy external) to the internet. The internal port 6673 is used for communication between the extension container and the proxy within Docker.
+The tunnel exposes host port **6674** (ext-proxy external) to the internet. The internal port 6673 is used for communication between the extension container and the proxy within Docker.
 
 ### Deploying fce-sign on Coston2 (Local Simulated TEE)
 
-Prerequisites: Docker Desktop, Foundry, Go, ngrok, a funded Coston2 wallet.
+Prerequisites: Docker Desktop (Linux containers), Foundry plus `jq` and `curl`, Go (deploy tooling in `go/tools/`), indexer DB credentials, a funded Coston2 wallet. No ngrok needed — `start-services.sh` starts a Cloudflare quick tunnel.
 
-**Step 0 — Activate local simulated mode:**
+After steps 0–2 the whole lifecycle runs in one command (`pre-build.sh` → `start-services.sh` → `post-build.sh` → `test.sh`):
 ```bash
-./scripts/use-chain.sh local coston2 go   # or python / typescript
+./scripts/full-setup.sh --chain coston2 --test
 ```
-Sets `SIMULATED_TEE=true` and `LOCAL_MODE=false` (real Coston2 chain, simulated attestation). Run `./scripts/use-chain.sh --list` to see all options.
 
-**Step 1 — Configure deployer keys** in `.env.local.coston2`:
+**Step 0 — Activate the chain and language:**
+```bash
+./scripts/use-chain.sh coston2 --simulated --language go   # or python / typescript
+```
+Creates anything missing (never overwrites) and copies the chosen env over `.env`: `.env.coston2`, `.env.local.coston2` (the `--simulated` variant), `config/proxy/extension_proxy.coston2.docker.toml` (addresses filled, `[db]` left to you), and `docker-compose.coston2.yaml`. `--simulated` sets `SIMULATED_TEE=true`, `LOCAL_MODE=false` (real Coston2 chain, simulated attestation), plus `CHAIN`, `CHAIN_ID=114`, `CHAIN_URL`, `ADDRESSES_FILE`, `NORMAL_PROXY_URL`. Every other script reads `CHAIN` from `.env`, and artifacts live per chain under `config/<chain>/`. Inspect with `--list` (chains with a `.env.<chain>`), `--status` (active chain/mode/language/config files), `--versions` (`tee-node`/`tee-proxy` pins vs latest upstream). A directory counts as a language implementation when it has a `language.env` manifest — drop one in to add a language.
+
+**Step 1 — Configure deployer keys** in `.env.local.coston2` (**never edit `.env`** — it is a disposable copy `use-chain.sh` overwrites):
 ```bash
 DEPLOYMENT_PRIVATE_KEY="<funded-coston2-private-key-hex-no-0x>"
 INITIAL_OWNER="0x<your-address>"
 ```
-Re-run `use-chain.sh` after editing so `.env` picks up changes.
+Re-run `use-chain.sh coston2 --simulated` after editing so `.env` picks up changes.
 
-**Step 2 — Reserve a public proxy URL** (separate terminal): `post-build.sh`, `start-services.sh`, and `test.sh` all read `EXT_PROXY_URL` from `.env`, so set it **before** deploying the contract or starting Docker services.
-
-> **Security:** `ngrok http 6674` makes your local **ext-proxy** public — port 6674 exposes the proxy HTTP API and anyone with the URL can call it. Use ngrok only for Coston2 testnet, and stop the tunnel when finished.
-
-```bash
-ngrok http 6674
-```
-Copy the HTTPS URL from ngrok's **Forwarding** line and set `EXT_PROXY_URL` in `.env.local.coston2`, then re-run `use-chain.sh`. The proxy isn't running yet — ngrok forwards traffic once Step 5 starts `ext-proxy`. The `ngrok` free tier keeps this URL stable across restarts, so this is normally a one-time step.
+**Step 2 — Configure the indexer DB:** edit the `[db]` block of the already-generated `config/proxy/extension_proxy.coston2.docker.toml` with the Coston2 indexer credentials (host `34.38.42.208`, port `3306`, database `indexer`). Credentials are provided on request via [support](https://flare.network/resources/technical-support) or [@flare_network](https://x.com/flare_network).
 
 **Step 3 — Deploy contract and register extension:**
 ```bash
 ./scripts/pre-build.sh
 ```
-Compiles Solidity, deploys `InstructionSender`, registers the extension on-chain. Writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extension.env`.
+Compiles Solidity, deploys `InstructionSender`, registers the extension on-chain. Writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/coston2/extension.env`.
 
-> **Warning:** once `config/extension.env` exists, pre-build refuses to run again. Use `--force` only when intentionally creating a new extension — it deploys a new `InstructionSender` and registers a new extension ID, which will cause `MachineManager.TooMany()` if an older TEE machine is still registered under the previous extension ID.
+> **Warning:** once `config/coston2/extension.env` exists, pre-build refuses to run again. Use `--force` only when intentionally creating a new extension — it deploys a new `InstructionSender` and registers a new extension ID, which will cause `MachineManager.TooMany()` if an older TEE machine is still registered under the previous extension ID.
 
-**Step 4 — Configure the indexer DB:**
-```bash
-cp config/proxy/extension_proxy.coston2.docker.toml.example \
-   config/proxy/extension_proxy.coston2.docker.toml
-```
-Edit the `[db]` block with the Coston2 indexer credentials (host `34.38.42.208`, port `3306`, database `indexer`). Credentials are provided on request via [support](https://flare.network/resources/technical-support) or [@flare_network](https://x.com/flare_network).
-
-**Step 5 — Start the extension stack:**
+**Step 4 — Start the extension stack:**
 ```bash
 ./scripts/start-services.sh
 ```
-Builds the extension image, then starts redis, ext-proxy, and extension-tee. The script itself waits for `EXT_PROXY_URL/info` — with ngrok already running from Step 2, that check goes through your public tunnel to the local proxy. Wait for the proxy locally: `until curl -sf http://localhost:6674/info >/dev/null 2>&1; do sleep 2; done`. Confirm only the extension proxy is listening on 6674: `lsof -i :6674`.
+Builds the extension image, starts redis, ext-proxy, and extension-tee, and (with `SIMULATED_TEE=true`) starts a Cloudflare tunnel to host port **6674**, writes `EXT_PROXY_URL` into `.env` and `.env.local.coston2`, then waits for the public `/info`. To use ngrok instead: start `ngrok http 6674` first, set `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, then start services.
 
-**Step 6 — Verify the proxy:**
+> **Security:** the tunnel makes your local **ext-proxy** public — anyone with the URL can call the proxy HTTP API. Use it only for Coston2 testnet and stop it with `./scripts/stop-services.sh --chain coston2` when finished.
+
+> **The tunnel URL is written on-chain once.** Flare delivers instructions to the URL stored in `MachineManager` at `post-build.sh` registration — it is never rewritten. A quick tunnel mints a new hostname every start, so a restarted tunnel makes a healthy TEE look dead (on-chain calls succeed, every poll times out). Repoint with `./scripts/update-tee-url.sh` (one transaction, no re-attestation; defaults to `EXT_PROXY_URL`), or use a named Cloudflare tunnel.
+
+**Step 5 — Verify the proxy:**
 ```bash
 curl -s "$EXT_PROXY_URL/info" | jq '.machineData'
 ```
-Simulated TEE: `codeHash` = `0x194844cf…`, `extensionId` matches `config/extension.env`, `initialOwner` matches your address.
+Simulated TEE: `codeHash` = `0x194844cf…` (production rejects it), `extensionId` matches `config/coston2/extension.env`, `initialOwner` matches your address.
 
-**Step 7 — Register the TEE machine:**
+**Step 6 — Register the TEE machine:**
 ```bash
 ./scripts/post-build.sh
 ```
-Runs three onchain steps: `allow-tee-version` (whitelists code hash), `set-governance` (registers the extension's TEE governance signer set/threshold — defaults to the deployer as sole signer with threshold 1 unless you set `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` in `.env`), and `register-tee -command rRap` (registers the machine, issues fresh attestation, runs FTDC check, promotes to production). The governance set must match what the `extension-tee` node container was given, or registration reverts with `InvalidGovernanceHash`.
+Runs three onchain steps: `allow-tee-version` (whitelists code hash), `set-governance` (registers the extension's TEE governance signer set/threshold — defaults to the deployer as sole signer with threshold 1 unless you set `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD`), and `register-tee -command rRap` (registers the machine, issues fresh attestation, runs FTDC check, promotes to production). The governance set must match what the `extension-tee` node container was given, or registration reverts with `InvalidGovernanceHash`. Before the availability check the tooling compares the FDC2 proxy's signing policy with the on-chain reward epoch and fails fast with `ErrPolicyOutOfSync` rather than polling a round that never appears.
 
-**Step 8 — Run end-to-end test:**
+**Step 7 — Run end-to-end test:**
 ```bash
 ./scripts/test.sh
 ```
-Sequence: `setExtensionId()` → fetch TEE public key → ECIES-encrypt a test private key → `updateKey` on-chain → wait for processing → `sign` on-chain → verify ECDSA signature matches.
+Sequence: `setExtensionId()` (idempotent) → fetch TEE public key → ECIES-encrypt a fixed test private key → `updateKey` on-chain, poll → `sign` on-chain, poll → ABI-decode and `ecrecover` the signer, asserting it matches the test key's address (the real assertion).
+
+Switching language (e.g. re-running `use-chain.sh ... --language python` then `start-services.sh`) builds a different image and therefore a different `codeHash` — re-run `post-build.sh` before `test.sh`.
 
 ### Python and TypeScript Handler Framework
 
@@ -252,7 +257,7 @@ Each handler receives a hex-encoded `originalMessage` and returns `(data, status
 - **`status`:** `0` = error, `1` = success, `>=2` = pending
 - **`error`:** error message string if the handler failed
 
-The `base/` package (Python/TypeScript) provides `hex_to_bytes`/`bytes_to_hex` and the `Framework` HTTP server. **Do not modify `base/`** — it is framework infrastructure.
+The `base/` package (Python/TypeScript) provides `hex_to_bytes`/`bytes_to_hex` and the `Framework` HTTP server. **Do not modify `base/`** — it is framework infrastructure. The Python and TypeScript frameworks serialize handler calls, so module-level state is safe; in Go, protect shared state with a mutex.
 
 ### fce-sign Project Structure
 
@@ -260,20 +265,25 @@ The `base/` package (Python/TypeScript) provides `hex_to_bytes`/`bytes_to_hex` a
 sign/
 ├── contracts/                   # Solidity contracts (shared)
 ├── config/
-│   ├── extension.env            # Generated by pre-build.sh
-│   ├── coston2/deployed-addresses.json
+│   ├── coston2/                 # Per-chain artifacts
+│   │   ├── deployed-addresses.json
+│   │   └── extension.env        # Generated by pre-build.sh
 │   └── proxy/                   # ext-proxy TOML configs
-├── scripts/                     # use-chain.sh, pre-build.sh, start-services.sh, post-build.sh, test.sh
+├── docs/                        # getting-started, deployment-steps, cloudflared, testing
+├── scripts/                     # use-chain.sh, full-setup.sh, pre-build.sh, start-services.sh, post-build.sh,
+│                                # test.sh, check-tee-machines.sh, update-tee-url.sh, stop-services.sh
 ├── go/internal/extension/       # Go business logic (modify)
 ├── go/tools/cmd/                # Deploy CLIs (Go-only, shared across all languages)
 ├── python/app/                  # Python business logic (modify)
 ├── python/base/                 # Framework infrastructure (do not modify)
 ├── typescript/src/app/          # TypeScript business logic (modify)
 ├── typescript/src/base/         # Framework infrastructure (do not modify)
+├── <lang>/language.env          # Language manifest (Dockerfile, test/run commands)
 ├── docker-compose.yaml
-├── .env.example
-└── .env.local.coston2
+└── docker-compose.cloudflared.yaml   # Shared tunnel, compose project "tunnel"
 ```
+
+Env files (`.env.<chain>`, `.env.local.<chain>`) and `config/<chain>/extension.env` are generated, not committed. Production deployment on a GCP Confidential Space VM: `docs/deployment-steps.md`.
 
 ### Building Your Own Extension from fce-sign
 
@@ -287,14 +297,17 @@ sign/
 
 **Stop the stack:**
 ```bash
-./scripts/stop-services.sh
+./scripts/stop-services.sh --chain coston2
 ```
+Stops redis, ext-proxy, extension-tee, and the tunnel last. With `SIMULATED_TEE=true` it also stops the **shared** Cloudflare tunnel, rotating the URL for every extension behind it; `--tunnel` forces it down in live mode.
 
 **Full reset** (start from scratch):
 ```bash
-./scripts/stop-services.sh
+./scripts/stop-services.sh --chain coston2
 docker compose down --rmi local
-rm -f .env config/extension.env config/proxy/extension_proxy.coston2.docker.toml
+rm -f .env .env.coston2 .env.local.coston2 \
+   config/coston2/extension.env \
+   config/proxy/extension_proxy.coston2.docker.toml
 ```
 
 Then restart from Step 0. Note: on-chain state (deployed contracts, registered extensions, TEEs) cannot be reset — each `pre-build.sh` deploys new contracts.
@@ -303,12 +316,17 @@ Then restart from Step 0. Note: on-chain state (deployed contracts, registered e
 
 - **Proxy won't start / DB sync error** — check `docker compose logs ext-proxy`; verify DB credentials in `config/proxy/extension_proxy.coston2.docker.toml`.
 - **Transaction reverts** — insufficient C2FLR; use the [Coston2 faucet](https://faucet.flare.network/coston2).
-- **`MachineManager.TooMany()`** — `config/extension.env` extension ID doesn't match the on-chain TEE record (usually after `pre-build.sh --force`). Do a full reset or keep the existing `extension.env` and re-run only `post-build.sh` + `test.sh`.
+- **`MachineManager.TooMany()`** — the extension ID `InstructionSender` is bound to doesn't match the on-chain TEE record (usually after `pre-build.sh --force`). Diagnose read-only first: `cd go/tools && go run ./cmd/check-tee-state -a ../../config/coston2/deployed-addresses.json -c "$CHAIN_URL" -p "$EXT_PROXY_URL" -instructionSender "$INSTRUCTION_SENDER"` — it compares proxy `/info`, the on-chain TEE record, the sender's bound ID, and `getActiveTeeMachines`, and prints a verdict. Then point `INSTRUCTION_SENDER` at the address it prints, or do a full reset.
+- **Test passes sometimes, times out other times** — more than one TEE machine is active and instructions are load-balanced across them; the stale ones are identities from earlier relaunches (the TEE key lives only in memory, so every relaunch mints a new one). `./scripts/check-tee-machines.sh` reports `LIVE`/`STALE`/`UNREACHABLE`/`UNKNOWN` per machine; `--pause` confirms and pauses each stale one. `UNREACHABLE` is not `LIVE`. **There is no unpause** — never pause the live machine.
+- **Every poll times out after the tunnel restarted** (`pollAction` timeout, `/action/result` 404) — the on-chain URL is stale; run `./scripts/update-tee-url.sh`.
+- **`undefined: sign.InstructionSender`** — contract bindings are generated, not committed; run `./scripts/generate-bindings.sh` in a fresh clone.
+- **`Verification.TeeNotFound`** — `NORMAL_PROXY_URL` points at the other chain's FDC2 proxy; for Coston2 it must be the HTTPS URL of `tee-proxy-coston2-1.flare.rocks`.
 - **`Verification.ChallengeExpired`** — re-run `post-build.sh`.
-- **`InvalidGovernanceHash`** — the `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` used by `set-governance` don't match the governance hash signed by the TEE node; leave both unset for the default deployer-only setup, or ensure `.env` and the node container agree, then re-run `post-build.sh`.
+- **`InvalidGovernanceHash`** — the `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` used by `set-governance` don't match the governance hash signed by the TEE node; leave both unset for the default deployer-only setup, or ensure `.env.local.coston2` and the node container agree, then re-run `post-build.sh`.
 - **`code hashes do not match`** — `SIMULATED_TEE` and container `MODE` disagree; use `SIMULATED_TEE=true` with `MODE=1` (injected by Docker Compose).
+- **`signature must be 65 bytes, got 0`** — `CHAIN_ID` is unset on the node; `use-chain.sh` sets it (`114` for Coston2).
+- **`docker-compose.coston2.yaml not found`** / edits in `.env` have no effect — run `./scripts/use-chain.sh coston2 --simulated`; edit `.env.local.coston2`, not `.env`.
 - **TEE registration times out** — try `docker compose restart ext-proxy`; FDC attestation requires active relay providers on Coston2.
-- **ngrok URL changed** — update `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, restart the ngrok tunnel if needed (`ngrok http 6674`), restart Docker stack, re-run `post-build.sh` and `test.sh`.
 
 ## fce-weather-insurance: Parametric Insurance Example
 
@@ -362,18 +380,33 @@ The node signs `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId, ActionRe
 The TEE's trust comes from **remote attestation**: the Confidential Space VM measures the running image and reports a **code hash**. Flare's data providers (FTDC) only accept results from a TEE whose code hash has been **whitelisted on-chain** for that extension. This makes builds security-critical:
 
 - **`MODE=0`** is the production attestation backend; **`MODE=1`** produces *simulated* attestation that FTDC rejects. For testnet/mainnet the image must bake `MODE=0` and `.env` must set `LOCAL_MODE=false` / `SIMULATED_TEE=false`.
-- **Reproducibility:** set `SOURCE_DATE_EPOCH` (e.g. the last commit time) so the same source yields the same code hash. The **Go** path is bit-for-bit reproducible across machines (single static binary). **Python/TypeScript** reach same-machine determinism but cross-machine bit-for-bit is best-effort (pip wheels / `node_modules` embed host paths) — a rebuild on a different machine may change the code hash and force re-registration. `fce-sign` picks the language via `LANGUAGE=go|python|typescript` in `.env`.
+- **Reproducibility:** set `SOURCE_DATE_EPOCH` (e.g. the last commit time) so the same source yields the same code hash. The **Go** path is bit-for-bit reproducible across machines (single static binary). **Python/TypeScript** reach same-machine determinism but cross-machine bit-for-bit is best-effort (pip wheels / `node_modules` embed host paths) — a rebuild on a different machine may change the code hash and force re-registration. `fce-sign` picks the language via `./scripts/use-chain.sh <chain> --language go|python|typescript`.
 
 ## Deployment Lifecycle (Coston / Coston2)
 
 The scaffold scripts chain four phases (`./scripts/full-setup.sh --chain coston2 --test` runs all of them in one shot; each can also run individually):
 
-1. **pre-build** (`pre-build.sh`) — compile + deploy the `InstructionSender`, register the extension on `TeeExtensionRegistry`, write `EXTENSION_ID` + `INSTRUCTION_SENDER` to `config/extension.env`. Re-running reuses an existing `config/extension.env` rather than refusing to run; pass `--force` only when you intentionally want a new extension.
+1. **pre-build** (`pre-build.sh`) — compile + deploy the `InstructionSender`, register the extension on `TeeExtensionRegistry`, write `EXTENSION_ID` + `INSTRUCTION_SENDER` to `config/<chain>/extension.env`. Once that file exists pre-build refuses to run again; pass `--force` only when you intentionally want a new extension.
 2. **start services** (`docker compose up -d --build`) — run `redis`, the `ext-proxy`, and the `extension-tee` (your code) as containers. Locally `LOCAL_MODE=true` skips attestation.
 3. **post-build** (`post-build.sh`) — `allow-tee-version` whitelists the code hash, `set-governance` registers the extension's TEE governance signer set/threshold (defaults to the deployer with threshold 1 unless `GOVERNANCE_SIGNERS`/`GOVERNANCE_THRESHOLD` are set), then `register-tee` registers the TEE machine on-chain. Use `register-tee -command rRap` so re-runs issue a fresh attestation challenge (capital `R`) and avoid `Verification.ChallengeExpired`.
 4. **test** (`test.sh`) — send instructions through the deployed TEE and verify the round-trip.
 
-**Real testnet** adds: a funded deployer key (Coston2 faucet), a publicly reachable proxy URL (any HTTPS tunnel to port `6674` — e.g. ngrok or cloudflared), indexer-DB credentials for the proxy, and a GCP Confidential Space VM to run the image. Verify the deploy by curling the proxy `/info` and confirming `machineData`: `platform` starts with `0x4743505f414d445f534556…` (GCP_AMD_SEV), `codeHash` is a real measured hash (not the simulated `0x194844cf…`), and `extensionId`/`initialOwner` match `config/extension.env`. If the `FlareTeeManager` diamond is redeployed, all registrations are wiped — re-run pre-build for a fresh `EXTENSION_ID`, have the VM operator restart with the new ID, then re-run post-build and test.
+**Real testnet** adds: a funded deployer key (Coston2 faucet), a publicly reachable proxy URL (any HTTPS tunnel to port `6674` — e.g. ngrok or cloudflared), indexer-DB credentials for the proxy, and a GCP Confidential Space VM to run the image. Verify the deploy by curling the proxy `/info` and confirming `machineData`: `platform` starts with `0x4743505f414d445f534556…` (GCP_AMD_SEV), `codeHash` is a real measured hash (not the simulated `0x194844cf…`), and `extensionId`/`initialOwner` match `config/<chain>/extension.env`. If the `FlareTeeManager` diamond is redeployed, all registrations are wiped — re-run pre-build for a fresh `EXTENSION_ID`, have the VM operator restart with the new ID, then re-run post-build and test.
+
+### Migrating after a protocol redeploy (`Relay` / `FlareSystemsManager` / `VoterRegistry`)
+
+Different from a `FlareTeeManager` redeploy: your registration is untouched, but `ext-proxy` reads signing policies from these three contracts (they redeploy together), so a stack that didn't change at all breaks. Symptoms: proxy `lastSigningPolicyId` behind the reward epoch, `ext-proxy` panics with `initializing signing policy`, availability checks `404`. No rebuild, no new code hash — and **no rollback** (the old `Relay` stops receiving policies). Guide: [Migrate After a Protocol Redeploy](https://dev.flare.network/fcc/guides/protocol-redeploy-migration).
+
+- **Version floor:** `tee-proxy v0.0.24` + `tee-node v0.0.26` (scaffold pins in `proxy/Dockerfile` / `tools/go.mod`). `tee-proxy ≤ v0.0.18` can't advance signing policies; `tee-node < v0.0.26` doesn't follow the current `Relay`. `scripts/check-versions.sh` only fails below `tee-node v0.0.24`/`tee-proxy v0.0.19`, so passing it isn't enough. A policy id that never moves is a version problem, not an address problem.
+- **Steps:**
+  1. Diff your `config/coston2/deployed-addresses.json` against the scaffold's published copy **by contract name** (`jq -r '.[]|"\(.name) \(.address)"' | sort`). Expect only `Relay` (usually with `FlareSystemsManager`, `VoterRegistry`). **Stop** if `FlareTeeManager` or any `Tee*` contract changed — that means re-registering from scratch.
+  2. `curl -fsS -o "$ADDR" "$NEW"` the scaffold's `deployed-addresses.json` over yours — registration/verification tooling reads `FlareSystemsManager` from it, not from the proxy config.
+  3. Edit only the changed keys under `[addresses]` (`flare_systems_manager`, `relay`, `voter_registry`) in the proxy TOML mounted as `config.toml` (scaffold: `config/proxy/extension_proxy.coston2.docker.toml`, gitignored — back it up; `use-chain.sh` won't regenerate an existing file). **Leave `[db]` untouched.**
+  4. Wait until the new `Relay` has a policy — `lastInitializedRewardEpochData()(uint32,uint32)` first value above `initialRewardEpochId()(uint32)` (up to a full reward epoch, ~6 h on Coston2) — else the proxy panics `no signing policy logs`. Then restart **both** `extension-tee` and `ext-proxy` (a proxy-only restart panics `initializing signing policy: loading last policy <n>` because the node holds the old `Relay`'s policy ids). No rebuild; don't restart redis or the tunnel.
+  5. The node restart mints a **new TEE identity** (key never persisted). Run `post-build.sh` to register it, confirm it appears in `getActiveTeeMachines(EXTENSION_ID)`, **then** `pause(address)` the stale id with the machine-owner key (`DEPLOYMENT_PRIVATE_KEY`; check `getTeeMachineOwner`). Identify the live id as `keccak256(pubkey.x ‖ pubkey.y)[12:]` from proxy `/info` `.teeInfo.publicKey`, or let `scripts/check-tee-machines.sh` do it. Until then `getRandomTeeIds` routes ~half the instructions to the dead machine. **No `unpause`** — recovering a wrongly paused machine needs `toProduction` with a fresh availability-check proof.
+  6. Verify `/info` `.teeInfo.lastSigningPolicyId` climbs to `getCurrentRewardEpochId()` (or one ahead). A fresh node starts `initial_signing_policy_offset` back (`2` in scaffold, `3` if omitted) and advances one per `signing_policy_fetch_interval` (`20s` scaffold, `10m` default) — only a number that stays put is a failure.
+- `cast` calls from the scaffold root need `--chain 114`: Foundry auto-loads `.env` and reads `CHAIN=coston2` as its own `--chain` (`invalid value 'coston2'`).
+- Panic triage: `reading config:` → bad TOML quotes; `connecting to database:` / `c-chain indexer:` → `[db]` was changed, restore from backup.
 
 ### Common failure modes
 
@@ -387,11 +420,19 @@ The scaffold scripts chain four phases (`./scripts/full-setup.sh --chain coston2
 
 Most failures are a local stack drifted from the current on-chain deployment or a registered URL that no longer resolves — check these before assuming the network is at fault:
 
-- **TEE never reaches production** (availability check `404`s indefinitely, empty machine queue, `getRandomTeeIds` returns nothing, callers revert with `TooMany()`): first check whether you're running with `SIMULATED_TEE=true` — a simulated attestation is not something the real Coston2 data providers can cosign, so the availability check never gets voted on and the machine stays at `INITIALIZED` forever, with every poll for it returning `404`. That's expected for local development, not a bug; the machine will simply never show `PRODUCTION` onchain. Beyond that, read back what you actually registered with the scaffold's `query-tee` tool — `go run ./tools/cmd/query-tee -reg <FlareTeeManager address> <your TEE id>` (take the registry address from `config/coston2/deployed-addresses.json`, not the tool's built-in default). Compare the registered `url` character-by-character with what you're serving now — quick tunnels (ngrok/Cloudflare quick tunnels) mint a new hostname on every restart, so a restarted tunnel silently orphans the on-chain registration. Use a **named** Cloudflare tunnel or a reserved ngrok domain instead. An empty `teeId` from `query-tee` means you're talking to a different deployment than you think — pull latest `main`, take every address fresh from `config/coston2/deployed-addresses.json`, and re-run pre-build/post-build (a redeploy wipes existing registrations).
+- **TEE never reaches production** (availability check `404`s indefinitely, empty machine queue, `getRandomTeeIds` returns nothing, callers revert with `TooMany()`): first check whether you're running with `SIMULATED_TEE=true` — a simulated attestation is not something the real Coston2 data providers can cosign, so the availability check never gets voted on and the machine stays at `INITIALIZED` forever, with every poll for it returning `404`. That's expected for local development, not a bug; the machine will simply never show `PRODUCTION` onchain. Beyond that, read back what you actually registered with the scaffold's `query-tee` tool (take the registry address from `config/coston2/deployed-addresses.json`, not the tool's built-in default):
+  ```bash
+  source .env && source config/coston2/extension.env
+  REG=$(jq -r '.[]|select(.name=="FlareTeeManager").address' config/coston2/deployed-addresses.json)
+  cd tools && go run ./cmd/query-tee -ext "$((EXTENSION_ID))" -reg "$REG" -rpc "$CHAIN_URL"
+  ```
+  `-ext` takes the **decimal** extension ID (`$((EXTENSION_ID))` converts the hex); pass a TEE machine address as a positional argument to inspect one machine. Compare the registered `url` character-by-character with what you're serving now — quick tunnels (ngrok/Cloudflare quick tunnels) mint a new hostname on every restart, so a restarted tunnel silently orphans the on-chain registration. Use `./scripts/update-tee-url.sh`, a **named** Cloudflare tunnel, or a reserved ngrok domain. If a redeploy moved only `Relay`/`FlareSystemsManager`/`VoterRegistry`, follow the [protocol-redeploy migration](#migrating-after-a-protocol-redeploy-relay--flaresystemsmanager--voterregistry) instead. An empty `teeId` from `query-tee` means you're talking to a different deployment than you think — pull latest `main`, take every address fresh from `config/coston2/deployed-addresses.json`, and re-run pre-build/post-build (a redeploy wipes existing registrations).
 - **Proxy panics on startup or rejects TEE responses** (`hex string without 0x prefix`, `verifying response signature: invalid signature`, `error signing: could not sign`): version skew between `tee-node` and `tee-proxy` — their wire format changes while FCC is in development. Never bump one side alone; the Go module pin and `proxy/Dockerfile`'s `TEE_PROXY_VERSION` must move together, and building from on-disk local siblings (rather than the pinned versions) is what usually introduces the skew.
 - **Instructions never reach your extension despite an instruction ID and no other errors** — you likely reused a reserved `F_`-prefixed `OPType` or one of the reserved command names above under a custom `OPType`; this passes local pair validation with **no error**, so the instruction is just silently not delivered.
 - **Indexer DB auth/connection fails** (`Access denied for user 'indexer-reader'`, timeouts against a VPN-only host) — the host/port/database name are already documented (Step 4 above); only the read-only username and password are missing, since they're issued per requester and rotated periodically. Request current credentials via [technical support](https://flare.network/resources/technical-support) or [X](https://x.com/FlareDevs). Credentials shared in community chats go stale faster than the docs do, and older repository documents may point at the **Coston** (not Coston2) indexer, which uses different credentials and needs a VPN — Coston2 doesn't.
-- **Web2Json verifier request fails only against the OpenWeatherMap URL from the Weather Insurance example** — check your OpenWeatherMap plan before assuming the verifier is broken. The [Weather Insurance Extension](#fce-weather-insurance-parametric-insurance-example) example calls an endpoint that needs a paid OpenWeatherMap plan, so a free-tier key fails there even though the same verifier works correctly against other URLs.
+- **Proxy broken right after a restart that picked up a new reward epoch** — a new reward epoch is initialized and signed ~2 hours before it is live on chain; restarting inside that window makes the proxy load an epoch the chain hasn't reached. Set `initial_signing_policy_offset=1` in the proxy config (scaffold: `config/proxy/extension_proxy.coston2.docker.toml`) and restart the proxy.
+- **Name mismatch between Solidity and the extension** — the `OPType`/`OPCommand` strings must match the contract in `go/internal/config/config.go`, `python/app/config.py`, or `typescript/src/app/config.ts`, whichever you run.
+- **Weather Insurance Extension request fails against the OpenWeatherMap URL** — check your OpenWeatherMap plan before assuming the extension is broken. The [Weather Insurance Extension](#fce-weather-insurance-parametric-insurance-example) example calls an endpoint that needs a paid OpenWeatherMap plan, so a free-tier key fails there even though the same extension works correctly against other URLs.
 - Include your extension ID, TEE machine address, failing instruction ID, and `query-tee` output when asking for help — those four details usually identify the cause immediately.
 
 ## When to Use a Different Skill

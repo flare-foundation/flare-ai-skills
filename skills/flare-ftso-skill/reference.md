@@ -22,7 +22,7 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 - [Read Feeds Offchain](https://dev.flare.network/ftso/guides/read-feeds-offchain) — JavaScript/TypeScript example using web3 and RPC
 - [Change Quote Feed](https://dev.flare.network/ftso/guides/change-quote-feed) — Cross-pair calculation (e.g. BTC/ETH from BTC/USD and ETH/USD)
 - [Make a Volatility Incentive](https://dev.flare.network/ftso/guides/make-volatility-incentive) — Pay to temporarily increase expected sample size during high volatility
-- [Create a Custom Feed](https://dev.flare.network/ftso/guides/create-custom-feed) — Create a custom price feed using Web2Json attestation via FDC and CoinGecko API
+- [Create a Custom Feed](https://dev.flare.network/ftso/guides/create-custom-feed) — **Deprecated** (unlisted): custom price feed using the deprecated FDC Web2Json attestation and CoinGecko API; Coston/Coston2 only. For Web2 data use an FCC extension
 - [Migrate an App to FTSO (Adapters)](https://dev.flare.network/ftso/guides/adapters) — Migrate dApps from Chainlink, Pyth, API3, Band, or Chronicle using FTSO adapter libraries
 
 ## Solidity Reference (Contract Interfaces)
