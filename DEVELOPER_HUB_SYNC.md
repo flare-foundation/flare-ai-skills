@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `a54a8d60a0963085000e540f69c46bdf3099e0f2`
-- **Date:** 2026-10-09
-- **Subject:** `Merge branch 'chore/deprecate-web2-json' into 'main'`
+- **Commit:** `3e2ecf8ff00a192003bd1aeaf8ccc2dc3d0d7cfa`
+- **Date:** 2026-10-14
+- **Subject:** `Merge branch 'docs/fxrp-oft' into 'main'`
 
 ## How to sync next time
 
