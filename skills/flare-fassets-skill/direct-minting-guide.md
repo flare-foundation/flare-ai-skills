@@ -144,6 +144,8 @@ Direct minting is subject to rate limits that delay (not reject) large or high-f
 - `DirectMintingExecutedToSmartAccount` — fires instead of `DirectMintingExecuted` when the payment has no registered tag recipient and no valid direct-minting memo; FAssets mint to the smart account manager, which routes them by `sourceAddress`/`memoData`. The executor fee is not set by AssetManager in this path.
 - `DirectMintingPaymentTooSmallForFee` — fires (without reverting) when `receivedAmount < getDirectMintingMinimumFeeUBA()`; the entire payment goes to the fee receiver and neither the minter nor executor receives anything.
 
+**Emergency pause preflight:** call `emergencyPaused()` on the AssetManager before sending XRP; while `true`, `executeDirectMinting` reverts with the custom error `EmergencyPauseActive` (not an event). Wait until it returns `false` (or past `emergencyPausedUntil()`, then re-check). `mintingPaused()` is a separate flag that does not gate direct minting. See [Check pause status](https://dev.flare.network/fassets/emergency-pause#check-pause-status).
+
 **Full troubleshooting reference:** [Direct Minting Troubleshooting](https://dev.flare.network/fassets/troubleshooting/minting-troubleshooting) — pre-flight checklist, irreversible failure modes, `executeDirectMinting` revert table, delay/retry steps, and MintingTagManager pitfalls.
 
 ## Operational Parameters (Testnet Coston2)

@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `3e2ecf8ff00a192003bd1aeaf8ccc2dc3d0d7cfa`
-- **Date:** 2026-10-14
-- **Subject:** `Merge branch 'docs/fxrp-oft' into 'main'`
+- **Commit:** `6865e2ef34120f7895810c0f88419b1e4931c70c`
+- **Date:** 2026-11-09
+- **Subject:** `Merge branch 'feat/fassets-pause-expanded' into 'main'`
 
 ## How to sync next time
 

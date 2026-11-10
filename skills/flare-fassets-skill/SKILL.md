@@ -142,6 +142,14 @@ Multisig on the underlying network; governance can pause.
 
 Not agent-owned.
 
+### Emergency Pause
+Three-level governance/external pause on the AssetManager. `EmergencyPause.Level`: `NONE` (0), `START_OPERATIONS` (1 — blocks starting mint, redeem, liquidation, Core Vault transfer/return, self-mint/close, agent creation, pool enter/exit/fee ops; in-flight ops can finish), `FULL` (2 — also blocks finishing/defaulting already-started mints and redeems), `FULL_AND_TRANSFER` (3 — also blocks FAsset transfers).
+- Blocked calls revert with the argument-less custom **error** `EmergencyPauseActive()` — a revert reason, not an event. `executeDirectMinting`/`executeDirectMintingWithData` use the `notEmergencyPaused` guard, so they revert at level ≥ 1.
+- **Preflight before sending XRP or calling execute:** `emergencyPaused()` (bool, `level != NONE`); if `true`, don't send and don't execute — wait until `false` (or `block.timestamp >= emergencyPausedUntil()` and re-check). `emergencyPauseLevel()` → `uint8` level for UI/alerting; `emergencyPausedUntil()` → unix seconds when the pause auto-ends (`0` if none).
+- `mintingPaused()` is a **separate** minting-only governance flag (collateral reservation / self-mint paths; redemptions and liquidations still work; event `MintingPaused(bool)`). It does **not** gate Core Vault direct minting — check `emergencyPaused()` for that.
+- Events for event-driven status: `EmergencyPauseTriggered(externalLevel, externalPausedUntil, governanceLevel, governancePausedUntil)` — external and governance pauses tracked separately; effective level is the higher of the two while its end time is in the future; `EmergencyPauseCanceled()` (both cleared); `EmergencyPauseTotalDurationReset()` (governance resets the accumulated external-pause duration counter).
+- Docs: [Emergency Pause System](https://dev.flare.network/fassets/emergency-pause#check-pause-status).
+
 ## Contracts and Addresses — Get at Runtime
 
 **FlareContractsRegistry** (same on all Flare networks): `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`.
