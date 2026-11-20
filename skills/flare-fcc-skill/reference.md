@@ -4,68 +4,68 @@ Use these links for official docs, source repositories, contract surfaces, and t
 
 ## Flare Developer Hub (FCC)
 
-- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, key features, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development, available on Coston2, Coston, and Songbird today, and coming to other Flare networks soon.
-- [FCC Reference](https://dev.flare.network/fcc/reference) — Solidity ABI reference for the `FlareTeeManager` diamond and its facets: [`IFlareTeeManager`](https://dev.flare.network/fcc/reference/IFlareTeeManager), [`IExtensionManager`](https://dev.flare.network/fcc/reference/IExtensionManager), [`IMachineManager`](https://dev.flare.network/fcc/reference/IMachineManager), [`IVerification`](https://dev.flare.network/fcc/reference/IVerification), [`IOperationFees`](https://dev.flare.network/fcc/reference/IOperationFees), [`IOwnerAllowlist`](https://dev.flare.network/fcc/reference/IOwnerAllowlist), [`ITeeCommonErrors`](https://dev.flare.network/fcc/reference/ITeeCommonErrors)
-- [TEE Public and Private Keys](https://dev.flare.network/fcc/tee-keys) — The per-machine identity keypair, ECDSA (sign/verify) vs ECIES (encrypt/decrypt), and the encrypt-off-chain/decrypt-inside-the-enclave pattern via `POST /decrypt`.
+- [FCC Overview](https://dev.flare.network/fcc/overview) — Architecture, instructions vs direct actions, Flare Compute Extensions, Protocol Managed Wallets, TEE-based FDC. FCC is in the final stages of development, available on Coston2, Coston, and Songbird today, and coming to other Flare networks soon.
+- [TEE Public and Private Keys](https://dev.flare.network/fcc/tee-keys) — The per-machine identity keypair, ECDSA (sign/verify) vs ECIES (encrypt/decrypt), and decrypting inside the enclave through the sign port.
 - [Data Providers and Cosigners](https://dev.flare.network/fcc/data-providers) — How instructions are relayed and signed by the Flare Systems Protocol data-provider set (>50% signing weight) before a TEE executes, and the cosigner gate for sensitive operations.
-- [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting) — `query-tee` diagnostics, stale tunnel URLs, `tee-node`/`tee-proxy` version skew, reserved `F_` operation names, indexer DB credential issues, and the new-reward-epoch `initial_signing_policy_offset=1` fix.
-- [Build Your First Extension (Getting Started)](https://dev.flare.network/fcc/guides/getting-started) — Hello World scaffold walkthrough: instruction lifecycle, the files you own, OPType/OPCommand customization in Go, Python, or TypeScript, and deploying/testing on Coston2 (`use-chain.sh` + bundled Cloudflare tunnel + `full-setup.sh`). Start here.
-- [Private Key Extension Guide](https://dev.flare.network/fcc/guides/sign-extension) — Step-by-step walkthrough: contract code, offchain handler (Go/Python/TypeScript), Coston2 deployment with the bundled Cloudflare tunnel, `update-tee-url.sh`/`check-tee-machines.sh`/`check-tee-state`, end-to-end test, troubleshooting, and cleanup
-- [Migrate After a Protocol Redeploy](https://dev.flare.network/fcc/guides/protocol-redeploy-migration) — Repoint a running extension stack at redeployed `Relay`/`FlareSystemsManager`/`VoterRegistry`: version floor (`tee-proxy v0.0.24`, `tee-node v0.0.26`), address diff, proxy `[addresses]` edit, restarting both services, registering the new TEE identity and pausing the stale one
-- [Weather Insurance Extension Guide](https://dev.flare.network/fcc/guides/weather-insurance-extension) — Full FCC application: parametric rainfall insurance, ECIES-encrypted private policies, settlement via OpenWeatherMap data, Next.js frontend. Prerequisites: Docker Desktop, Foundry, Go, an HTTPS tunnel (ngrok or cloudflared) to port 6674, an OpenWeatherMap API key, and a funded Coston2 wallet.
+- [Instruction Fees](https://dev.flare.network/fcc/instruction-fees) — Protocol fee (per operation pair, per TEE) vs project fee (`setProjectFee`, once per instruction), `quoteFee(opType, opCommand)`, `InsufficientFee` vs `FeeTooLow`.
+- [FCC Troubleshooting](https://dev.flare.network/fcc/troubleshooting) — `fce status`, `fce` refusals, machine never reaching production, protocol redeploys, send reverts, result errors, reserved `F_` operation names, test vs production machines, migrating from the legacy scaffold.
 - [FCC Whitepaper](https://dev.flare.network/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf) — "Flare Confidential Compute: Powering Interoperability for Flare through TEEs" (Jul 6, 2026): the FCC mechanism, Protocol Managed Wallets, Flare Compute Extensions, and FDC2
+
+## Developer Guides
+
+- [Guides index](https://dev.flare.network/fcc/guides) — All FCC guides (Coston2, FCE Go scaffold, `fce` CLI)
+- [Build Your First Extension](https://dev.flare.network/fcc/guides/getting-started) — Install `fce`, fork `fce-go-scaffold`, the template's instruction (`MY_COMMAND`) and direct (`MY_DIRECT_COMMAND`) ops, `ExtensionBase`, `fce conformance`/`deploy`/`add-version -test`/`governance`/`run`/`send`/`direct`, going to production. Start here.
+- [External API Extension](https://dev.flare.network/fcc/guides/external-api-extension) — Fetch prices over TLS from three APIs inside the TEE, long-running results with partial statuses, TEE-signed median verified onchain via `_teeSigner`
+- [Direct Actions Extension](https://dev.flare.network/fcc/guides/direct-actions-extension) — Admin key set onchain, ECIES-encrypted secrets provisioned as signed direct actions, replay protection, sealed-bid auction, state verifier (`verifyTeeState`)
+- [Wallets Extension](https://dev.flare.network/fcc/guides/wallets-extension) — Sign EIP-1559 transactions with a wallet key `tee-node` generates in the TEE; manual onchain wallet setup; nonces and replacement; restarts and backups
+- [Deploy a TEE on Google Cloud](https://dev.flare.network/fcc/guides/deploy-on-gcp) — `fcc-node-suite-deployment` Terraform: Confidential Space tee-machine, tee-proxy, C-chain indexer; manual machine registration on `FlareTeeManager`
+
+## Contract Reference (`FlareTeeManager` diamond)
+
+- [FCC Reference](https://dev.flare.network/fcc/reference) — Solidity ABI reference index
+- Core: [`IFlareTeeManager`](https://dev.flare.network/fcc/reference/IFlareTeeManager) (aggregate ABI), [`ITeeCommonErrors`](https://dev.flare.network/fcc/reference/ITeeCommonErrors)
+- Extensions and TEE machines: [`IExtensionManager`](https://dev.flare.network/fcc/reference/IExtensionManager), [`IMachineManager`](https://dev.flare.network/fcc/reference/IMachineManager), [`IVerification`](https://dev.flare.network/fcc/reference/IVerification), [`IOwnerAllowlist`](https://dev.flare.network/fcc/reference/IOwnerAllowlist)
+- Instructions: [`IInstructions`](https://dev.flare.network/fcc/reference/IInstructions) (`sendInstructions`, `TeeInstructionParams`, `TeeInstructionsSent`), [`IOperationFees`](https://dev.flare.network/fcc/reference/IOperationFees)
+- Protocol Managed Wallets: [`IWalletProjectManager`](https://dev.flare.network/fcc/reference/IWalletProjectManager) (projects, key type, signing algorithm, backup manager), [`IWalletManager`](https://dev.flare.network/fcc/reference/IWalletManager) (wallet lifecycle `NONE → CREATED → INITIALIZED → PRODUCTION ⇄ PAUSED`, admins, cosigners), [`IWalletKeyManager`](https://dev.flare.network/fcc/reference/IWalletKeyManager) (`addKey`, `confirmKey`, multisig threshold, receiving TEEs)
 
 ## Reference Repositories
 
-- [flare-foundation/fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold) — Runnable "Hello World" TEE extension (Go, Python, or TypeScript via `./scripts/use-chain.sh <chain> --language`): contracts, deploy/registration tooling, and Claude Code skills (`/create-extension`, `/rename-scaffold`, `/test-extension`, `/verify-deploy`). The starting point for building an extension.
-- [fce-extension-scaffold README](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/README.md) — Repo structure, env vars, ports, local + Coston2 deployment walkthroughs
-- [Extension Development Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-guide.md) — How an extension works, architecture, the files you modify, the action-handler pattern, data flow
-- [InstructionSender Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/instruction-sender.md) — On-chain entry point requirements, scaffold contract, writing a custom sender
-- [Extension Contract Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/extension-contract.md) — Decoding instruction data (`DataFixed`), the on-chain contract surface
-- [Testing Guide](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/testing.md) — Writing and running extension tests
-- [Making It Your Own](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/manual-setup.md) — Renaming the Hello World placeholders
-- [Deployment Steps](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/docs/deployment-steps.md) — Linear Coston/Coston2 deploy recipe
-
-## Signing Example
-
-- [flare-foundation/fce-sign](https://github.com/flare-foundation/fce-sign) — Example TEE extension that stores a private key and signs messages with it. Ships in Go, Python, and TypeScript (select with `use-chain.sh --language`). **Demo only**: it stores an encrypted secret on-chain, which is not safe for production.
-- [fce-sign docs/reproducibility.md](https://github.com/flare-foundation/fce-sign/blob/main/docs/reproducibility.md) — `SOURCE_DATE_EPOCH`, reproducible image builds, and the cross-machine code-hash caveats for Python/TS
-
-## Weather Insurance Extension
-
-- [flare-foundation/fce-weather-insurance](https://github.com/flare-foundation/fce-weather-insurance) — Full FCC application: parametric rainfall insurance using OpenWeatherMap data inside a TEE. Includes Go handler, `WeatherInsurance.sol`, ECIES-encrypted private policies, and a Next.js frontend.
-- [flare-foundation/fce-weather-insurance-x402-agent](https://github.com/flare-foundation/fce-weather-insurance-x402-agent) — AI agent showcase: buys and settles weather insurance policies against the extension above using [x402 payments](https://dev.flare.network/fxrp/token-interactions/x402-payments).
-
-## Contract Interfaces
-
-Onchain, the registry surface lives behind one [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535) diamond, `FlareTeeManager` — see the [FCC Reference](https://dev.flare.network/fcc/reference) link above for the full ABI. The scaffold's local interfaces map to its facets:
-
-- [`ITeeExtensionRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeExtensionRegistry.sol) — `sendInstructions(address[] teeIds, TeeInstructionParams params)`, `nextPublicExtensionId()` (public extension IDs start at `0x10000`), `getTeeExtensionInstructionsSender(uint256)`; matches the diamond's `IExtensionManager` facet
-- [`ITeeMachineRegistry.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/interfaces/ITeeMachineRegistry.sol) — `getRandomTeeIds(uint256 extensionId, uint256 count)`; matches the diamond's `IMachineManager` facet
-- [`InstructionSender.sol`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/contracts/InstructionSender.sol) — Reference on-chain entry point (`HelloWorldInstructionSender`)
+- [flare-foundation/fce-go-scaffold](https://github.com/flare-foundation/fce-go-scaffold) — The scaffold to fork: `template/`, `examples/external-api`, `examples/direct`, `examples/wallets`, the Go library (`pkg/extension`, `pkg/payload`), and `sol/src/ExtensionBase.sol`
+  - [Extension guide](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/extension-guide.md) — Errors, long-running jobs, state, the TEE key, wallet keys, environment variables
+  - [Rules](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/rules.md) — Every requirement an extension must meet and what enforces it
+  - [Extension contract](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/extension-contract.md) — Language-agnostic `tee-node` ↔ extension wire protocol
+  - [Contracts guide](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/contracts.md) — `ExtensionBase`, consuming results onchain, sending to several TEEs
+  - [Direct actions](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/direct-actions.md) and [assumptions](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/assumptions.md) — Trust model
+  - [Forking guide](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/fork.md), [production draft](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/production.md)
+- [flare-foundation/fce-tooling](https://github.com/flare-foundation/fce-tooling) — The `fce` CLI
+- [flare-foundation/fcc-node-suite-deployment](https://github.com/flare-foundation/fcc-node-suite-deployment) — Terraform for Confidential Space tee-machine, tee-proxy, and indexer ([`TESTING.md`](https://github.com/flare-foundation/fcc-node-suite-deployment/blob/main/TESTING.md), [`modules/tee-package/README.md`](https://github.com/flare-foundation/fcc-node-suite-deployment/blob/main/modules/tee-package/README.md))
+- [flare-foundation/fce-weather-insurance-x402-agent](https://github.com/flare-foundation/fce-weather-insurance-x402-agent) — AI agent showcase composing a Flare Compute Extension with [x402 payments](https://dev.flare.network/fxrp/token-interactions/x402-payments)
+- *Legacy (replaced by `fce-go-scaffold`):* `fce-extension-scaffold`, `fce-sign`, `fce-weather-insurance`
 
 ## Related Flare Confidential Compute Work
 
 - [flare-foundation/flare-ai-kit](https://github.com/flare-foundation/flare-ai-kit) — SDK for building verifiable AI agents on Flare using Confidential Space
 - [Flare Foundation on GitHub](https://github.com/flare-foundation) — Full org, including `flare-smart-contracts-v2`
-- [Flare Hackathon: Verifiable AI with Google Cloud Confidential Space](https://flare.network/news/flare-hackathon-winners) — Background on Flare's TEE/Confidential Space direction
 
-## TEE Platform (GCP Confidential Space / AMD SEV)
+## TEE Platform (GCP Confidential Space)
 
 - [Google Cloud Confidential Space overview](https://cloud.google.com/confidential-computing/confidential-space/docs/confidential-space-overview) — The platform Flare TEEs run on
 - [Remote attestation in Confidential Space](https://docs.cloud.google.com/confidential-computing/docs) — How the attestation tokens / measurements that back the on-chain code hash work
-- [AMD SEV](https://www.amd.com/en/developer/sev.html) — The memory-encryption technology behind the `GCP_AMD_SEV` platform value reported by the proxy `/info` endpoint
+- [AMD SEV](https://www.amd.com/en/developer/sev.html) — The memory-encryption technology behind the `GCP_AMD_SEV` platform value (`GCP_INTEL_TDX` is also supported)
+- [IAP TCP forwarding](https://cloud.google.com/iap/docs/using-tcp-forwarding) — How the GCP guide reaches the private VMs
 
 ## Networks (deploy targets)
 
-- **Coston2** (Flare testnet): RPC `https://coston2-api.flare.network/ext/C/rpc`, chain ID `114`, faucet `https://faucet.flare.network/coston2`
+- **Coston2** (Flare testnet, used by all guides): RPC `https://coston2-api.flare.network/ext/C/rpc`, chain ID `114`, faucet `https://faucet.flare.network/coston2`
 - **Coston** (Songbird testnet): RPC `https://coston-api.flare.network/ext/C/rpc`, faucet `https://faucet.flare.network/coston`
 - See the [flare-general skill](../flare-general-skill/SKILL.md) and [Flare Developer Hub](https://dev.flare.network/) for the full network table.
 
 ## Key Operational Values
 
-- **Attestation mode:** `MODE=0` = production attestation (FTDC-accepted); `MODE=1` = simulated (rejected on testnet/mainnet).
-- **Local vs live:** `LOCAL_MODE=true` skips attestation for local dev; set `false` on Coston/Coston2. Pair with `SIMULATED_TEE=false`.
-- **Reproducible builds:** set `SOURCE_DATE_EPOCH` (e.g. `git log -1 --format=%ct`) so the same source yields the same code hash. Go is bit-for-bit cross-machine; Python/TS are best-effort.
-- **`register-tee -command rRap`** — issues a fresh attestation challenge on re-runs (avoids `Verification.ChallengeExpired`).
-- **Proxy `/info` → `machineData`:** `platform` starts `0x4743505f414d445f534556…` (GCP_AMD_SEV); `codeHash` must be a real measured hash (not the simulated `0x194844cf…`); `extensionId`/`initialOwner` must match `config/<chain>/extension.env`.
+- **Test vs production:** `fce run` = `tee-node` test mode (`MODE=1`), fixed test code hash `0x194844cf…` on `TEST_PLATFORM`; production = Confidential Space with `MODE=0`, hash allowed via `fce add-version -platform GCP_AMD_SEV,GCP_INTEL_TDX`. Disable the test hash with `fce disable-version -test` (permanent) before real users.
+- **Handler timing:** 1.5 s per handler, `tee-node` waits 2 s; longer work returns a `Run` (status `2`, partials `4`–`255`).
+- **Result statuses:** `0` error (final), `1` ok (final), `2` pending, `3` node timeout, `4`–`255` partial.
+- **Proxy endpoints:** `GET /info` (`.teeInfo.publicKey`, `.teeInfo.lastSigningPolicyId`, `.teeInfo.state`, `.machineData`), `POST /direct` (`X-Api-Key`), `GET /action/result/<id>` (`?submissionTag=submit` for direct actions, `?submissionTag=threshold` for registration).
+- **Proxy `/info` → `machineData` (production):** `platform` starts `0x4743505f414d445f534556` (`GCP_AMD_SEV`); `codeHash` = the hash `fce add-version` recorded; `extensionId`/`initialOwner` match `deployments/<chain>.json`.
+- **Signature `V`:** sign port and `/info` return `V` as `0`/`1`; add 27 before `ecrecover` or `register`.
+- **Flare contract registry:** `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` on all networks (resolve `FlareTeeManager`, `Relay`, `FlareSystemsManager`, `VoterRegistry`).

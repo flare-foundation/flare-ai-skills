@@ -15,6 +15,7 @@ Use these links for general Flare network documentation, tooling, and developer 
 - [Flare for Python](https://dev.flare.network/network/guides/flare-for-python-developers) — web3.py, py-solc-x, async patterns; see also [flare-for-python-guide.md](flare-for-python-guide.md)
 - [Flare for Rust](https://dev.flare.network/network/guides/flare-for-rust-developers) — alloy-rs, sol! macro, deploy; see also [flare-for-rust-guide.md](flare-for-rust-guide.md)
 - [Flare for Go](https://dev.flare.network/network/guides/flare-for-go-developers) — go-ethereum, abigen, deploy; see also [flare-for-go-guide.md](flare-for-go-guide.md)
+- [Flare MCP Server](https://dev.flare.network/network/guides/flare-mcp-server) — `https://mcp.flare.network`: live Flare reads, docs search/fetch, unsigned transaction builders (replaces the Developer Hub MCP server at `dev.flare.network/mcp`)
 
 ## Getting Started
 
@@ -93,6 +94,7 @@ Full directory: [dev.flare.network/network/developer-tools](https://dev.flare.ne
 
 ## Flare TX SDK
 
+- [Using Flare Stake Tool](https://dev.flare.network/network/guides/using-flare-stake-tool) — `flare-stake-tool` v5: Ledger (Flare app) or private key, C↔P transfers, delegation, validator staking, auto-renewed validators, `info stakes`
 - [Flare TX SDK Overview](https://dev.flare.network/network/flare-tx-sdk) — Official Node.js toolkit for rewards, delegation, staking, governance, transfers
 - [Getting Started](https://dev.flare.network/network/flare-tx-sdk/getting-started) — Installation, MetaMask/Ledger/Trezor wallet setup, unit conversion
 - [Cookbook](https://dev.flare.network/network/flare-tx-sdk/cookbook) — Recipes for balances, wrap/transfer, claim rewards, delegate, stake, vote

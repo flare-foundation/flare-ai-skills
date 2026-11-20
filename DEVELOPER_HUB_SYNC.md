@@ -8,9 +8,9 @@ need to look at what landed after it.
 
 ## Last synced
 
-- **Commit:** `6865e2ef34120f7895810c0f88419b1e4931c70c`
-- **Date:** 2026-11-09
-- **Subject:** `Merge branch 'feat/fassets-pause-expanded' into 'main'`
+- **Commit:** `8a0ed6e3a8a09995942b5dfc90e5cd80cb8e1cfe`
+- **Date:** 2026-11-19
+- **Subject:** `Merge branch 'feat/flare-mcp' into 'main'`
 
 ## How to sync next time
 

@@ -41,7 +41,7 @@ The **Flare Time Series Oracle (FTSO)** is an enshrined oracle that delivers dec
 
 **Key properties:**
 - **Enshrined** — built into Flare's core protocol; every feed inherits the economic security of the entire network.
-- **Fast** — block-latency feeds update with every new block on Flare, approximately every **≈1.8 seconds**.
+- **Fast** — block-latency feeds update with every new block on Flare, approximately every **≈1.1 seconds**.
 - **Scalable** — supports up to **1000 feeds** across crypto, equities, and commodities, with **2 weeks** of historical data.
 - **Decentralized** — each feed is supported by approximately **100 independent data providers**, selected by delegated stake.
 - **Cost-effective** — block-latency feeds are **free to query onchain** (view calls). Some feeds may require a small fee for state-changing calls. Scaling anchor feeds are free to query and verify locally, with minimal gas for onchain verification.
@@ -62,7 +62,7 @@ FTSO has four core components:
 
 | Type | Update Frequency | Method | Cost |
 |------|-----------------|--------|------|
-| **Block-latency feeds** | Every block (≈1.8s) | Incremental delta updates via VRF-selected providers | Free (view); small fee possible for state-changing calls |
+| **Block-latency feeds** | Every block (≈1.1s) | Incremental delta updates via VRF-selected providers | Free (view); small fee possible for state-changing calls |
 | **Scaling (anchor) feeds** | Every 90 seconds (voting epoch) | Full commit-reveal across all providers, weighted median | Free to query; minimal gas for onchain Merkle verification |
 
 ## Feed IDs
@@ -245,7 +245,7 @@ On Coston2, use `TestFtsoV2Interface` (`getContractAddressByName("FtsoV2")` retu
 
 - **Never hardcode the FtsoV2 address** — always resolve via `ContractRegistry`.
 - Block-latency feed view calls (`getFeedByIdInWei`, `getFeedsByIdInWei`) are **free** — no `value` needed.
-- Set `refetchInterval: ~2000ms` to keep feeds current (≈1.8s block time).
+- Set `refetchInterval: ~2000ms` to keep feeds current (≈1.1s block time).
 - Use `formatUnits(value, 18)` from viem to convert wei-scaled values to display strings.
 - The `@flarenetwork/flare-wagmi-periphery-package` exports ABIs, chain configs, and contract registry addresses — use these instead of copying ABI JSON manually.
 

@@ -41,7 +41,7 @@ All transaction signing, key management, and on-chain execution must occur exclu
 
 **Core value propositions:**
 - **Enshrined oracles** — FTSO and FDC are protocol-level, not third-party add-ons.
-- **Fast finality** — ~1.8 second block time with single-slot finality (Snowman++ consensus).
+- **Fast finality** — ~1.1 second block time with single-slot finality (Snowman++ consensus).
 - **EVM-compatible** — Deploy any Solidity/Vyper contract; supports Cancun hard fork opcodes.
 - **Interoperable** — Native bridges to XRP Ledger, Bitcoin, Dogecoin via FAssets; cross-chain data via FDC.
 
@@ -49,7 +49,7 @@ All transaction signing, key management, and on-chain execution must occur exclu
 
 | Protocol | What It Does |
 |----------|-------------|
-| **FTSO** (Flare Time Series Oracle) | Decentralized block-latency price feeds (~1.8s), ~100 data providers, stake-weighted selection. Also provides Scaling anchor feeds every 90s. |
+| **FTSO** (Flare Time Series Oracle) | Decentralized block-latency price feeds (~1.1s), ~100 data providers, stake-weighted selection. Also provides Scaling anchor feeds every 90s. |
 | **FDC** (Flare Data Connector) | Validates external data from other chains via attestation consensus and Merkle proofs. (Web2Json is deprecated — use FCC extensions for Web2 data.) |
 | **FAssets** | Trustless wrapped tokens (FXRP, FBTC, FDOGE) enabling XRP, BTC, and DOGE holders to use Flare DeFi. |
 | **Smart Accounts** | Account abstraction letting XRPL users interact with Flare without holding FLR. |
@@ -108,12 +108,14 @@ Validators on Flare serve a dual role: they participate in consensus **and** act
 | Property | Value |
 |----------|-------|
 | Consensus | Snowman++ (single-slot finality) |
-| Block time | ~1.8 seconds |
+| Block time | ~1.1 seconds (since go-flare v1.15.1 / Helicon) |
 | Sybil resistance | Proof-of-Stake |
 | EVM version | Cancun (set `evmVersion: "cancun"` in Hardhat/Foundry) |
 | Address format | 20-byte ECDSA (Ethereum-compatible) |
 | Transaction format | EIP-2718; supports Type 0 (Legacy) and Type 2 (EIP-1559) |
 | Fee burning | All transaction fees are burned |
+| Minimum gas charge | Since Helicon (go-flare v1.15.1), a tx is charged for **at least half its gas limit** even if it uses less — set the gas limit close to expected use |
+| Minimum base fee | 500 GWei since go-flare v1.14.0 (was 25 GWei, FIP.16) |
 | Native token decimals | 18 |
 
 ## Key npm Packages
@@ -310,6 +312,25 @@ Reference: [dev.flare.network/network/fsp](https://dev.flare.network/network/fsp
 
 Full list with links: [dev.flare.network/network/developer-tools](https://dev.flare.network/network/developer-tools)
 
+### Flare MCP Server (AI Agents)
+
+`https://mcp.flare.network` — stateless Streamable HTTP MCP server (`flare-mcp`), no API key. It replaces the docs-only `dev.flare.network/mcp` server; the old guide URL redirects to the new one, and `/.well-known/mcp` now points to `mcp.flare.network` (tools, resources and prompts).
+
+- **Scope:** live chain and protocol reads, Developer Hub `docs_search`/`docs_fetch` (ranked from `llms.txt`, pages fetched as `.md`), and unsigned transaction builders for FTSO, FDC, FAssets, Smart Accounts, FCC (read-only), WNat/delegation/rewards, P-chain, governance and RNG.
+- **Read-only and non-custodial:** `*_build_*` tools return an unsigned tx (`to`, `data`, `value`), a summary, and an `eth_call` simulation (pass `from` to simulate as a wallet). The server never signs or broadcasts. XRPL mint and Smart Account tools return destination, amount and memo to sign in an XRPL wallet. Do not set a destination tag unless the tool says to.
+- **Networks:** default `flare` (chain ID 14). Also accepts `coston2`, `songbird` and `coston`. Addresses are resolved from the FlareContractRegistry at call time, so pass registry names such as `AssetManagerFXRP`. ABIs come from `@flarenetwork/flare-wagmi-periphery-package`.
+- **Resources:** `networks://index`, `contracts://{network}`, `feeds://{network}`, `fdc://attestation-types[/{type}]`, `proposals://index`.
+- **Prompts:** `mint-fxrp`, `redeem-fxrp`, `delegate-and-claim`, `choose-validator`.
+- **FAssets semantics:** `redeemableNow` is redemption-queue ticket capacity, not the Core Vault balance. One `redeem` uses at most `maxRedeemedTickets` tickets.
+
+```bash
+claude mcp add --transport http flare https://mcp.flare.network
+```
+
+Cursor: `{"mcpServers":{"flare":{"type":"http","url":"https://mcp.flare.network"}}}` in `~/.cursor/mcp.json`. Claude Desktop: `npx -y mcp-remote https://mcp.flare.network`.
+
+Guide: [Flare MCP Server](https://dev.flare.network/network/guides/flare-mcp-server)
+
 ## Flare TX SDK
 
 The **`@flarenetwork/flare-tx-sdk`** is the official Node.js toolkit for performing common actions on all Flare networks.
@@ -382,7 +403,20 @@ await network.invokeContractCallOnC(contractAddress, abi, "methodName", [params]
 await network.invokeContractMethodOnC(wallet, contractAddress, abi, "methodName", value, [params]);
 ```
 
-> **Staking limit — max 3 validators per address.** Do not stake from the same address to more than three validators at once. Although additional stakes may be technically possible outside the staking portal, the stake-mirroring service only processes the first three, and stakes beyond that will **not earn rewards**. See [What You Should Consider When Staking FLR](https://flare.network/news/what-you-should-consider-when-staking-flr).
+> **Staking limit — max 3 validators per address.** Do not stake from the same address to more than three validators at once. Rewards, FlareDrops, and governance vote power only apply to up to 3 different validators at a time; the stake-mirroring service only processes the first three, and stakes beyond that will **not earn rewards**. On Flare and Coston2, `flare-stake-tool` (v5+) **refuses** a stake or delegation to a fourth validator while stakes to three others are active. See [What You Should Consider When Staking FLR](https://flare.network/news/what-you-should-consider-when-staking-flr).
+
+**P-chain staking parameters (go-flare v1.14.0+):** per-validator stake cap **300M FLR** (was 200M); minimum validator delegation fee **20%** (the stake tool's default). On Coston2, minimum durations are 7 days (self-bond) and 24 hours (delegation). A stake starts when the network accepts the transaction (no start time).
+
+**Auto-renewed validators (Helicon, go-flare v1.15.1):** a validator can register **without an end time**; its stake renews every period as long as the node keeps **≥ 90% uptime** in each cycle (otherwise it ends with the current cycle and the stake is returned). Period must be within the network's min/max stake duration; a period of `0` stops renewal at the end of the current cycle; only the validator authority (default: the registering address) can change it.
+
+```bash
+flare-stake-tool addAutoRenewedValidator -n <nodeId> -a <amount> --period 60d --delegation-fee <fee> \
+  --pop-bls-public-key <key> --pop-bls-signature <sig> --ledger --network flare
+flare-stake-tool setAutoRenewedValidatorConfig -n <nodeId> --period 0 --ledger --network flare
+flare-stake-tool info stakes [--json]   # your stakes/delegations, validator count, total
+```
+
+**`flare-stake-tool` v5** (Node.js 24+): interactive menu adds View stakes, Transfer P-chain funds, Claim staking rewards, auto-renewed validator ops; networks Flare, Songbird, Coston2, Coston, LocalHost. On Ledger, use the **Flare app** (decodes P-chain txs on-device); the Avalanche app works only with blind signing; the Ethereum app signs C-chain txs only (e.g. reward claims — blind signing required). Derivation paths: BIP44 `m/44'/60'/0'/0/n` or Ledger Live `m/44'/60'/n'/0/0`. C→P transfer: export fee paid on C-chain, import fee taken from the arriving P-chain funds. If `npm` has `ignore-scripts=true`, run `npm rebuild node-hid --global --ignore-scripts=false` for Ledger support. Guide: [Using Flare Stake Tool](https://dev.flare.network/network/guides/using-flare-stake-tool).
 
 ### Wallet Integrations
 
@@ -443,8 +477,10 @@ Validators are chosen via **weighted sampling without replacement** based on sta
 ### Properties
 
 - **Finality:** Single-slot finality — blocks are final once confidence reaches the Beta threshold.
-- **Block time:** ~1.8 seconds.
+- **Block time:** ~1.1 seconds.
+- **Asynchronous execution (Helicon, go-flare v1.15.1):** the C-chain executes accepted blocks asynchronously. The `latest` block tag returns the last **executed** block; `safe` and `finalized` return the last **settled** block (one whose results a later block has recorded). A block header's state root and receipts root commit to the results of the **earlier blocks it settles** (up to its `settledHeight`), not to its own transactions — verify a transaction's receipt Merkle proof against the header of the block that **settles** it.
 - **Fault tolerance:** Byzantine fault-tolerant.
+- **Running a node on go-flare v1.15.1+** ([from source](https://dev.flare.network/run-node/from-source), [Docker](https://dev.flare.network/run-node/using-docker)): the C-chain keeps execution results in a separate **chain data dir** (`--chain-data-dir`, default `~/.avalanchego/chainData`; `/app/db/chainData` in Docker) — keep it on persistent storage with the DB (set it too if you move `--db-dir`); losing it forces a resync. C-chain config now uses `"apis": [...]` (replacing `eth-apis`; omit `trace` on publicly reachable nodes), `api-max-duration` must be a duration string (`"0s"`, a number fails startup), unknown options are ignored with a warning — see the [go-flare C-Chain config reference](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/saevm/cchain/config.md). Archival nodes: `"pruning-enabled": false`, `"state-sync-enabled": false`. Go `1.26.10`+ to build.
 - **Chains:** Runs on both P-chain and C-chain in Flare networks.
 - **Validator dual role:** Validators also serve as data providers for FTSO and FDC.
 

@@ -56,7 +56,7 @@
     },
     {
       "name": "flare-fcc",
-      "description": "Flare Confidential Compute (FCC) and TEE extension domain knowledge. Covers confidential extensions running in a Trusted Execution Environment, the TeeExtensionRegistry and TeeMachineRegistry, the InstructionSender contract pattern, OPType/OPCommand routing, the instruction lifecycle, the extension action handler, the types server, attestation, code-hash whitelisting, and reproducible builds.",
+      "description": "Flare Confidential Compute (FCC) and TEE extension domain knowledge. Covers Flare Compute Extensions running in a Trusted Execution Environment, the FlareTeeManager diamond, the InstructionSender/ExtensionBase contract pattern, instructions vs direct actions, OPType/OPCommand routing, instruction fees, TEE-signed results, TEE-generated wallet keys, attestation, code-hash allowlisting, and the fce-go-scaffold + fce CLI deploy flow.",
       "version": "1.0.0",
       "category": "development",
       "tags": ["flare", "fcc", "tee", "confidential-compute", "attestation", "blockchain", "web3"],

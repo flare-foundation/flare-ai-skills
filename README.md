@@ -25,23 +25,23 @@ Same `SKILL.md` format works across tools.
 | Skill | Description |
 |-------|-------------|
 | **[flare-general](skills/flare-general-skill/SKILL.md)** | General Flare knowledge—what Flare is, core protocols, networks, chain IDs, RPC endpoints, explorers, faucets, EVM setup, and developer tooling |
-| **[flare-ftso](skills/flare-ftso-skill/SKILL.md)** | FTSO—decentralized block-latency price feeds (~1.8s), Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation |
+| **[flare-ftso](skills/flare-ftso-skill/SKILL.md)** | FTSO—decentralized block-latency price feeds (~1.1s), Scaling anchor feeds, feed IDs, onchain and offchain consumption, fee calculation, delegation |
 | **[flare-fassets](skills/flare-fassets-skill/SKILL.md)** | FAssets—wrapped tokens (FXRP, FBTC, FDOGE), minting, redemption, agents, collateral, and smart contract integration |
 | **[flare-fdc](skills/flare-fdc-skill/SKILL.md)** | Flare Data Connector—attestation types (EVMTransaction, Web2Json, Payment, etc.), request flow, Merkle proofs, verifier/DA Layer, contract verification |
 | **[flare-smart-accounts](skills/flare-smart-accounts-skill/SKILL.md)** | Smart Accounts—account abstraction for XRPL users to interact with Flare without owning FLR |
-| **[flare-fcc](skills/flare-fcc-skill/SKILL.md)** | Flare Confidential Compute (FCC)—TEE extensions, TeeExtensionRegistry/TeeMachineRegistry, the InstructionSender pattern, OPType/OPCommand routing, the instruction lifecycle, types server, attestation, and reproducible builds |
+| **[flare-fcc](skills/flare-fcc-skill/SKILL.md)** | Flare Confidential Compute (FCC)—TEE extensions on the `FlareTeeManager` diamond, the `InstructionSender`/`ExtensionBase` pattern, instructions vs direct actions, OPType/OPCommand routing, instruction fees, TEE-signed results, wallet keys, attestation, and the `fce-go-scaffold` + `fce` CLI flow |
 
 ## What's in the skills
 
 ### flare-general
-- **Flare overview:** Interoperable EVM L1, enshrined protocols, fast finality (~1.8s), Snowman++ consensus
+- **Flare overview:** Interoperable EVM L1, enshrined protocols, fast finality (~1.1s), Snowman++ consensus
 - **Networks:** Flare Mainnet (14), Coston2 (114), Songbird (19), Coston (16) — chain IDs, RPC URLs, explorers, faucets
 - **Core protocols:** FTSO, FDC, FAssets, Smart Accounts — what each does and when to use a more specific skill
 - **Developer tooling:** Hardhat/Foundry setup, ContractRegistry pattern, EVM version (cancun), key npm packages
 - **Wagmi/viem:** `@flarenetwork/flare-wagmi-periphery-package` for typed contract interactions
 
 ### flare-ftso
-- **FTSO overview:** Enshrined oracle, block-latency feeds (~1.8s), ~100 data providers, stake-weighted VRF selection
+- **FTSO overview:** Enshrined oracle, block-latency feeds (~1.1s), ~100 data providers, stake-weighted VRF selection
 - **Architecture:** Verifiably random selection, incremental delta updates, volatility incentive mechanism, Scaling anchoring
 - **Feed consumption:** `FtsoV2Interface` (`getFeedById`, `getFeedsById`, wei variants), `ContractRegistry` resolution, `FeeCalculator`
 - **Scaling:** Commit-reveal anchor feeds (90s), weighted median, Merkle tree finalization, incentivization
@@ -65,12 +65,11 @@ Same `SKILL.md` format works across tools.
 - **TypeScript integration:** Viem-based examples for state lookup and custom instructions
 
 ### flare-fcc
-- **FCC overview:** Confidential extensions running inside a Trusted Execution Environment (GCP Confidential Space / AMD SEV), wired to Flare contracts
-- **On-chain building blocks:** `TeeExtensionRegistry`, `TeeMachineRegistry`, and the InstructionSender contract pattern (the only address allowed to submit instructions)
-- **Routing model:** `OPType`/`OPCommand` `bytes32` pairs matched across Solidity, Go config, and the Go router
-- **Extension code:** the `POST /action` handler 4-step pattern, the TEE signing port, and the types server (`/decode`)
-- **Attestation & builds:** code-hash whitelisting, `MODE=0` vs simulated, reproducible builds via `SOURCE_DATE_EPOCH`, and the Coston/Coston2 deploy lifecycle
-- **Reference repos:** `fce-extension-scaffold` (Hello World) and `fce-sign` (signing example)
+- **FCC overview:** Flare Compute Extensions running next to `tee-node` inside a Trusted Execution Environment (GCP Confidential Space, `GCP_AMD_SEV`/`GCP_INTEL_TDX`), wired to Flare contracts
+- **On-chain building blocks:** the `FlareTeeManager` diamond (`IExtensionManager`, `IMachineManager`, `IInstructions`, `IOperationFees`, wallet facets) and the `InstructionSender`/`ExtensionBase` contract (`chargesFees`, `quoteFee`, `_teeSigner`)
+- **Two channels:** onchain instructions (data-provider signed, fee-paying) vs direct actions posted to one TEE's proxy (no fee, payload-carried authorization, replay rules)
+- **Extension code:** Go handlers registered per channel, strict `payload` decoding, 1.5 s deadline and long-running `Run` results, TEE-signed results verified onchain, TEE-generated wallet keys
+- **Deploy & attestation:** `fce deploy`/`add-version`/`governance`/`run`/`send`/`direct`, test vs production code hashes, and Confidential Space deployment with `fcc-node-suite-deployment`
 
 The agent uses these skills when you work with FTSO price feeds, FAssets, FXRP, minting/redemption, FDC attestations, Smart Accounts, Confidential Compute / TEE extensions, or Flare DeFi.
 

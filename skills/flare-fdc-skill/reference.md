@@ -20,6 +20,13 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 - [XRPPayment](https://dev.flare.network/fdc/attestation-types/xrp-payment) — XRPL-native Payment with r-address, MemoData, DestinationTag
 - [XRPPaymentNonexistence](https://dev.flare.network/fdc/attestation-types/xrp-payment-nonexistence) — Prove no matching XRPL Payment in a ledger range
 
+## FDC by Hand (no scripts)
+
+Learning/debugging path: verifier `prepareRequest` → `getRequestFee` → `FdcHub.requestAttestation` → wait for round → DA Layer `proof-by-request-round` → `verifyX`, all with curl and a wallet.
+
+- [FDC by hand — AddressValidity](https://dev.flare.network/fdc/guides/fdc-by-hand/address-validity)
+- [FDC by hand — EVMTransaction](https://dev.flare.network/fdc/guides/fdc-by-hand/evm-transaction) — Attests a LayerZero FXRP OFT `send` on Sepolia (`testETH`) with 8 event logs (`Transfer`, `ExecutorFeePaid`, `DVNFeePaid`, `PacketSent`, `OFTSent`); `logIndices` are **block-level**, not per-transaction (`[]` = all events up to 50); third word of `abiEncodedRequest` is the MIC — never edit it
+
 ## FDC Guides (Hardhat)
 
 - [Hardhat FDC index](https://dev.flare.network/fdc/guides/hardhat)
@@ -49,6 +56,7 @@ Use these links for detailed specs, contract interfaces, and step-by-step guides
 ## Contract Reference (FDC)
 
 - [IFdcHub](https://dev.flare.network/fdc/reference/IFdcHub) — `requestAttestation(bytes)`, fee configs
+- [IFdcRequestFeeConfigurations](https://dev.flare.network/fdc/reference/IFdcRequestFeeConfigurations) — `getRequestFee(bytes)`: minimum fee in wei, keyed by attestation type + source only; reverts for unsupported pairs
 - [IFdcVerification](https://dev.flare.network/fdc/reference/IFdcVerification) — `verifyEVMTransaction`, `verifyPayment`, `verifyAddressValidity`, `verifyXRPPayment`, `verifyXRPPaymentNonexistence`, etc. (`verifyWeb2Json` remains for the deprecated testnet-only type)
 - [IEVMTransaction](https://dev.flare.network/fdc/reference/IEVMTransaction) — Proof/Response/RequestBody/ResponseBody/Event
 - [IAddressValidity](https://dev.flare.network/fdc/reference/IAddressValidity)

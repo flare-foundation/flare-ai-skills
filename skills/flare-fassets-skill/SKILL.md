@@ -148,7 +148,7 @@ Three-level governance/external pause on the AssetManager. `EmergencyPause.Level
 - **Preflight before sending XRP or calling execute:** `emergencyPaused()` (bool, `level != NONE`); if `true`, don't send and don't execute — wait until `false` (or `block.timestamp >= emergencyPausedUntil()` and re-check). `emergencyPauseLevel()` → `uint8` level for UI/alerting; `emergencyPausedUntil()` → unix seconds when the pause auto-ends (`0` if none).
 - `mintingPaused()` is a **separate** minting-only governance flag (collateral reservation / self-mint paths; redemptions and liquidations still work; event `MintingPaused(bool)`). It does **not** gate Core Vault direct minting — check `emergencyPaused()` for that.
 - Events for event-driven status: `EmergencyPauseTriggered(externalLevel, externalPausedUntil, governanceLevel, governancePausedUntil)` — external and governance pauses tracked separately; effective level is the higher of the two while its end time is in the future; `EmergencyPauseCanceled()` (both cleared); `EmergencyPauseTotalDurationReset()` (governance resets the accumulated external-pause duration counter).
-- Docs: [Emergency Pause System](https://dev.flare.network/fassets/emergency-pause#check-pause-status).
+- Docs: [Emergency Pause System](https://dev.flare.network/fassets/emergency-pause#check-pause-status); runnable viem example: [`flare-viem-starter/src/fassets/emergency-pause.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/emergency-pause.ts).
 
 ## Contracts and Addresses — Get at Runtime
 
